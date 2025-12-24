@@ -18,6 +18,7 @@ import { TimelineStep } from "./steps/TimelineStep";
 import { FinalSummaryStep } from "./steps/FinalSummaryStep";
 import { RegistrationModule } from "./registration/RegistrationModule";
 import { LegalEligibilityModule } from "./legal/LegalEligibilityModule";
+import { AgentsModule } from "./agents/AgentsModule";
 import { AnalysisLoading } from "@/components/AnalysisLoading";
 import { ArrowLeft, Sparkles } from "lucide-react";
 
@@ -265,39 +266,12 @@ export const FoundrWizard = ({ onBack }: FoundrWizardProps) => {
     );
   }
 
-  // Agents & Hiring section (placeholder)
   if (currentView === 'agents-hiring') {
     return (
-      <div className="min-h-screen flex flex-col bg-background">
-        <header className="border-b border-border/50 p-4 bg-card/80 backdrop-blur-sm sticky top-0 z-10">
-          <div className="container flex items-center justify-between">
-            <button onClick={() => setCurrentView('execution-journey')} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
-              <ArrowLeft className="h-4 w-4" />
-              <span className="font-medium text-sm">Back to Journey</span>
-            </button>
-            <h1 className="text-xl font-display font-bold text-gradient-primary">Agents & Hiring</h1>
-            <span className="pill pill-warning text-xs">Team Building</span>
-          </div>
-        </header>
-        <div className="flex-1 py-8 px-4 bg-gradient-hero">
-          <div className="container max-w-2xl text-center py-16">
-            <div className="w-20 h-20 rounded-2xl bg-gradient-warning flex items-center justify-center mx-auto mb-6">
-              <Sparkles className="h-10 w-10 text-warning-foreground" />
-            </div>
-            <h2 className="text-2xl font-bold mb-2">Coming Soon</h2>
-            <p className="text-muted-foreground mb-6">
-              Registered agent selection, first hire planning, and contractor guidance will be available soon.
-            </p>
-            <button 
-              onClick={() => setCurrentView('execution-journey')}
-              className="text-primary hover:underline font-medium"
-            >
-              Back to Journey
-            </button>
-          </div>
-        </div>
-        <FoundrChatbot />
-      </div>
+      <AgentsModule 
+        onComplete={handleSectionComplete} 
+        onBack={() => setCurrentView('execution-journey')} 
+      />
     );
   }
 
