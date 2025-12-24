@@ -11,16 +11,18 @@ serve(async (req) => {
   }
 
   try {
-    const { ideaSnapshot, analysis, entityType, fundraisingIntent } = await req.json();
+    const { ideaSnapshot, analysis, entityType, fundraisingIntent, regenerateSlide, slideIndex } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    console.log("Generating pitch deck for:", ideaSnapshot?.ideaName);
+    console.log("Generating pitch deck for:", ideaSnapshot?.ideaName, regenerateSlide ? `(regenerating slide: ${regenerateSlide})` : '');
 
-    const prompt = buildPitchDeckPrompt(ideaSnapshot, analysis, entityType, fundraisingIntent);
+    const prompt = regenerateSlide 
+      ? buildSingleSlidePrompt(ideaSnapshot, analysis, entityType, fundraisingIntent, regenerateSlide, slideIndex)
+      : buildPitchDeckPrompt(ideaSnapshot, analysis, entityType, fundraisingIntent);
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -39,7 +41,7 @@ serve(async (req) => {
             type: "function",
             function: {
               name: "generate_pitch_deck",
-              description: "Generate a complete pitch deck with slides",
+              description: "Generate pitch deck slides",
               parameters: {
                 type: "object",
                 properties: {
@@ -89,9 +91,8 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    console.log("AI response:", JSON.stringify(data, null, 2));
+    console.log("AI response received");
 
-    // Extract the tool call result
     const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
     if (toolCall?.function?.arguments) {
       const pitchDeck = JSON.parse(toolCall.function.arguments);
@@ -109,6 +110,24 @@ serve(async (req) => {
     });
   }
 });
+
+function buildSingleSlidePrompt(ideaSnapshot: any, analysis: any, entityType: string, fundraisingIntent: string, slideType: string, slideIndex: number): string {
+  return `Regenerate ONLY this slide for a pitch deck. Generate a fresh, improved version.
+
+STARTUP INFO:
+- Name: ${ideaSnapshot?.ideaName || "Unnamed Startup"}
+- Description: ${ideaSnapshot?.ideaDescription || "No description"}
+- Target Customer: ${ideaSnapshot?.targetCustomer || "Not specified"}
+
+SLIDE TO REGENERATE: "${slideType}" (Slide ${slideIndex + 1})
+
+Generate ONE slide with:
+- Fresh, improved content
+- 3-5 compelling bullet points
+- Brief speaker notes
+
+Return only this single slide in the slides array.`;
+}
 
 function buildPitchDeckPrompt(ideaSnapshot: any, analysis: any, entityType: string, fundraisingIntent: string): string {
   const competitors = analysis?.competitorAnalysis?.competitors || [];
