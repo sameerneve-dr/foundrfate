@@ -14,6 +14,7 @@ import { EntityTypeStep } from "./steps/EntityTypeStep";
 import { CCorpSetupWizard } from "./steps/CCorpSetupWizard";
 import { TimelineStep } from "./steps/TimelineStep";
 import { FinalSummaryStep } from "./steps/FinalSummaryStep";
+import { RegistrationModule } from "./registration/RegistrationModule";
 import { AnalysisLoading } from "@/components/AnalysisLoading";
 import { ArrowLeft } from "lucide-react";
 
@@ -26,6 +27,7 @@ export const FoundrWizard = ({ onBack }: FoundrWizardProps) => {
   const { analyzeIdea, isLoading } = useIdeaAnalysis();
   const [showCCorpSetup, setShowCCorpSetup] = useState(false);
   const [showPitchDeck, setShowPitchDeck] = useState(false);
+  const [showRegistration, setShowRegistration] = useState(false);
 
   const stepLabels = [
     "Idea",
@@ -64,11 +66,22 @@ export const FoundrWizard = ({ onBack }: FoundrWizardProps) => {
     resetLedger();
     setShowCCorpSetup(false);
     setShowPitchDeck(false);
+    setShowRegistration(false);
   };
 
   // Render pitch deck viewer
   if (showPitchDeck) {
     return <PitchDeckViewer onClose={() => setShowPitchDeck(false)} />;
+  }
+
+  // Render registration module
+  if (showRegistration) {
+    return (
+      <RegistrationModule 
+        onComplete={() => { setShowRegistration(false); setStep(6); }} 
+        onBack={() => setShowRegistration(false)} 
+      />
+    );
   }
 
   // Render loading state
@@ -112,7 +125,7 @@ export const FoundrWizard = ({ onBack }: FoundrWizardProps) => {
       case 4:
         return <FundraisingStep onComplete={() => setStep(5)} />;
       case 5:
-        return <EntityTypeStep onComplete={() => setStep(6)} onCCorpSetup={() => setShowCCorpSetup(true)} />;
+        return <EntityTypeStep onComplete={() => setStep(6)} onCCorpSetup={() => setShowRegistration(true)} />;
       case 6:
         return <TimelineStep onComplete={() => setStep(7)} />;
       case 7:
