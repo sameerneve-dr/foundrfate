@@ -2,6 +2,8 @@ import { useState } from "react";
 import { HeroSection } from "@/components/HeroSection";
 import { IdeaIntakeForm } from "@/components/IdeaIntakeForm";
 import { AnalysisResult } from "@/components/AnalysisResult";
+import { AnalysisLoading } from "@/components/AnalysisLoading";
+import { useIdeaAnalysis, type AnalysisResult as AnalysisData } from "@/hooks/useIdeaAnalysis";
 
 export type IdeaData = {
   ideaName: string;
@@ -16,20 +18,33 @@ export type IdeaData = {
 };
 
 const Index = () => {
-  const [step, setStep] = useState<"hero" | "intake" | "analysis">("hero");
+  const [step, setStep] = useState<"hero" | "intake" | "loading" | "analysis">("hero");
   const [ideaData, setIdeaData] = useState<IdeaData | null>(null);
+  const [analysisData, setAnalysisData] = useState<AnalysisData | null>(null);
+  const { analyzeIdea, isLoading } = useIdeaAnalysis();
 
   const handleStart = () => {
     setStep("intake");
   };
 
-  const handleSubmit = (data: IdeaData) => {
+  const handleSubmit = async (data: IdeaData) => {
     setIdeaData(data);
-    setStep("analysis");
+    setStep("loading");
+    
+    const result = await analyzeIdea(data);
+    
+    if (result) {
+      setAnalysisData(result);
+      setStep("analysis");
+    } else {
+      // If analysis failed, go back to intake
+      setStep("intake");
+    }
   };
 
   const handleReset = () => {
     setIdeaData(null);
+    setAnalysisData(null);
     setStep("hero");
   };
 
@@ -37,7 +52,10 @@ const Index = () => {
     <main className="min-h-screen bg-background">
       {step === "hero" && <HeroSection onStart={handleStart} />}
       {step === "intake" && <IdeaIntakeForm onSubmit={handleSubmit} onBack={() => setStep("hero")} />}
-      {step === "analysis" && ideaData && <AnalysisResult ideaData={ideaData} onReset={handleReset} />}
+      {step === "loading" && ideaData && <AnalysisLoading ideaName={ideaData.ideaName} />}
+      {step === "analysis" && ideaData && analysisData && (
+        <AnalysisResult ideaData={ideaData} analysis={analysisData} onReset={handleReset} />
+      )}
     </main>
   );
 };
