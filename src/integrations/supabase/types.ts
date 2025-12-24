@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      saved_ideas: {
+        Row: {
+          analysis_result: Json | null
+          created_at: string
+          decision_ledger: Json | null
+          id: string
+          idea_name: string
+          idea_snapshot: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          analysis_result?: Json | null
+          created_at?: string
+          decision_ledger?: Json | null
+          id?: string
+          idea_name: string
+          idea_snapshot: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          analysis_result?: Json | null
+          created_at?: string
+          decision_ledger?: Json | null
+          id?: string
+          idea_name?: string
+          idea_snapshot?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       shared_analyses: {
         Row: {
           analysis_result: Json
