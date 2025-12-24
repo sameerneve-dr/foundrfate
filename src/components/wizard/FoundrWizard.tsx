@@ -1,8 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useDecisionLedger } from "@/contexts/DecisionLedgerContext";
 import { useIdeaAnalysis } from "@/hooks/useIdeaAnalysis";
 import { WizardProgress } from "./WizardProgress";
 import { ChoicesSidebar } from "./ChoicesSidebar";
+import { AnimatedStep } from "./AnimatedStep";
+import { PitchDeckViewer } from "./PitchDeckViewer";
 import { IdeaSnapshotStep } from "./steps/IdeaSnapshotStep";
 import { VerdictStep } from "./steps/VerdictStep";
 import { TargetCustomerStep } from "./steps/TargetCustomerStep";
@@ -23,6 +25,7 @@ export const FoundrWizard = ({ onBack }: FoundrWizardProps) => {
   const { ledger, updateLedger, setStep, resetLedger } = useDecisionLedger();
   const { analyzeIdea, isLoading } = useIdeaAnalysis();
   const [showCCorpSetup, setShowCCorpSetup] = useState(false);
+  const [showPitchDeck, setShowPitchDeck] = useState(false);
 
   const stepLabels = [
     "Idea",
@@ -60,7 +63,13 @@ export const FoundrWizard = ({ onBack }: FoundrWizardProps) => {
   const handleReset = () => {
     resetLedger();
     setShowCCorpSetup(false);
+    setShowPitchDeck(false);
   };
+
+  // Render pitch deck viewer
+  if (showPitchDeck) {
+    return <PitchDeckViewer onClose={() => setShowPitchDeck(false)} />;
+  }
 
   // Render loading state
   if (isLoading) {
@@ -107,7 +116,7 @@ export const FoundrWizard = ({ onBack }: FoundrWizardProps) => {
       case 6:
         return <TimelineStep onComplete={() => setStep(7)} />;
       case 7:
-        return <FinalSummaryStep onReset={handleReset} onGeneratePitch={() => {}} />;
+        return <FinalSummaryStep onReset={handleReset} onGeneratePitch={() => setShowPitchDeck(true)} />;
       default:
         return <IdeaSnapshotStep onComplete={handleAnalyze} isAnalyzing={isLoading} />;
     }
@@ -139,9 +148,11 @@ export const FoundrWizard = ({ onBack }: FoundrWizardProps) => {
       <div className="flex-1 py-8 px-4">
         <div className="container max-w-4xl">
           <div className="grid lg:grid-cols-[1fr_280px] gap-8">
-            <div>{renderStep()}</div>
+            <AnimatedStep stepKey={ledger.currentStep}>
+              {renderStep()}
+            </AnimatedStep>
             <div className="hidden lg:block">
-              <div className="sticky top-24">
+              <div className="sticky top-24 animate-slide-in-right">
                 <ChoicesSidebar onReset={handleReset} />
               </div>
             </div>
