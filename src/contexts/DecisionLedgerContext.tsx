@@ -213,6 +213,7 @@ interface DecisionLedgerContextValue {
   setStep: (step: number) => void;
   unlockStep: (step: number) => void;
   resetLedger: () => void;
+  loadLedger: (savedLedger: Partial<DecisionLedger>) => void;
   updateCCorpSetup: (category: keyof DecisionLedger['cCorpSetup'], field: string, value: boolean) => void;
   updateRegistrationChecklist: (key: keyof RegistrationChecklist, done: boolean) => void;
 }
@@ -267,6 +268,12 @@ export const DecisionLedgerProvider: React.FC<{ children: React.ReactNode }> = (
     localStorage.removeItem(STORAGE_KEY);
   }, []);
 
+  const loadLedger = useCallback((savedLedger: Partial<DecisionLedger>) => {
+    const newLedger = { ...initialLedger, ...savedLedger };
+    setLedger(newLedger);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(newLedger));
+  }, []);
+
   const updateCCorpSetup = useCallback((
     category: keyof DecisionLedger['cCorpSetup'], 
     field: string, 
@@ -307,6 +314,7 @@ export const DecisionLedgerProvider: React.FC<{ children: React.ReactNode }> = (
       setStep, 
       unlockStep, 
       resetLedger,
+      loadLedger,
       updateCCorpSetup,
       updateRegistrationChecklist
     }}>
