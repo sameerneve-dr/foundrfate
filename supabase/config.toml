@@ -5,3 +5,9 @@ verify_jwt = false
 
 [functions.analyze-idea]
 verify_jwt = false
+
+[functions.foundr-chat]
+verify_jwt = false
+
+[functions.generate-pitch-deck]
+verify_jwt = false

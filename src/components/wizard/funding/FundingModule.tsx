@@ -6,6 +6,7 @@ import { FundraisingReadiness } from "./FundraisingReadiness";
 import { InvestorTypes } from "./InvestorTypes";
 import { FundingChecklist } from "./FundingChecklist";
 import { InvestorEducation } from "./InvestorEducation";
+import { PitchDeckGenerator } from "./PitchDeckGenerator";
 import { useDecisionLedger } from "@/contexts/DecisionLedgerContext";
 
 interface FundingModuleProps {
@@ -13,7 +14,7 @@ interface FundingModuleProps {
   onBack: () => void;
 }
 
-type FundingStep = 'readiness' | 'investors' | 'checklist' | 'education';
+type FundingStep = 'readiness' | 'investors' | 'checklist' | 'pitchdeck' | 'education';
 
 export const FundingModule = ({ onComplete, onBack }: FundingModuleProps) => {
   const { ledger } = useDecisionLedger();
@@ -25,7 +26,7 @@ export const FundingModule = ({ onComplete, onBack }: FundingModuleProps) => {
     // Trigger chatbot with message - the chatbot component will handle this
   };
 
-  const steps: FundingStep[] = ['readiness', 'investors', 'checklist', 'education'];
+  const steps: FundingStep[] = ['readiness', 'investors', 'checklist', 'pitchdeck', 'education'];
   const currentIndex = steps.indexOf(currentStep);
 
   const handleNext = () => {
@@ -98,7 +99,21 @@ export const FundingModule = ({ onComplete, onBack }: FundingModuleProps) => {
 
           {currentStep === 'checklist' && (
             <div className="space-y-6">
-              <FundingChecklist />
+              <FundingChecklist onGenerateAssets={handleNext} />
+              <div className="flex justify-end">
+                <button
+                  onClick={handleNext}
+                  className="pill pill-primary px-4 py-2 text-sm hover:opacity-90"
+                >
+                  Continue to Pitch Deck →
+                </button>
+              </div>
+            </div>
+          )}
+
+          {currentStep === 'pitchdeck' && (
+            <div className="space-y-6">
+              <PitchDeckGenerator />
               <div className="flex justify-end">
                 <button
                   onClick={handleNext}
