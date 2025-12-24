@@ -5,6 +5,18 @@ export type TargetCustomer = 'consumer' | 'b2b' | 'regulator' | 'product-teams' 
 export type ProfitType = 'for-profit' | 'non-profit' | 'hybrid' | null;
 export type EntityType = 'delaware-c-corp' | 'llc' | 'non-profit-501c3' | 'other' | null;
 export type FundraisingIntent = 'venture-scale' | 'bootstrap' | 'mixed' | null;
+export type RegistrationMode = 'diy' | 'service' | 'explain' | null;
+export type RegistrationPath = 'diy-checklist' | 'service-checklist' | 'hybrid' | null;
+
+export interface RegistrationChecklist {
+  chooseName: { done: boolean; doer: 'you' | 'service' };
+  fileCertificate: { done: boolean; doer: 'you' | 'service' };
+  getEIN: { done: boolean; doer: 'you' | 'service' };
+  openBank: { done: boolean; doer: 'you' | 'service' };
+  issueShares: { done: boolean; doer: 'you' | 'service' };
+  adoptBylaws: { done: boolean; doer: 'you' | 'service' };
+  ipAssignment: { done: boolean; doer: 'you' | 'service' };
+}
 
 export interface IdeaSnapshot {
   ideaName: string;
@@ -68,10 +80,25 @@ export interface DecisionLedger {
     };
   };
   
+  // Registration guidance
+  registrationMode: RegistrationMode;
+  registrationPath: RegistrationPath;
+  registrationChecklist: RegistrationChecklist;
+  
   // Current wizard step
   currentStep: number;
   maxUnlockedStep: number;
 }
+
+const initialChecklist: RegistrationChecklist = {
+  chooseName: { done: false, doer: 'you' },
+  fileCertificate: { done: false, doer: 'service' },
+  getEIN: { done: false, doer: 'you' },
+  openBank: { done: false, doer: 'you' },
+  issueShares: { done: false, doer: 'service' },
+  adoptBylaws: { done: false, doer: 'service' },
+  ipAssignment: { done: false, doer: 'you' },
+};
 
 const initialLedger: DecisionLedger = {
   ideaSnapshot: null,
@@ -92,6 +119,9 @@ const initialLedger: DecisionLedger = {
     equity: { ipAssignment: false, founderStock: false, advisorPool: false },
     einBanking: { ein: false, bankAccount: false },
   },
+  registrationMode: null,
+  registrationPath: null,
+  registrationChecklist: initialChecklist,
   currentStep: 0,
   maxUnlockedStep: 0,
 };
@@ -103,6 +133,7 @@ interface DecisionLedgerContextValue {
   unlockStep: (step: number) => void;
   resetLedger: () => void;
   updateCCorpSetup: (category: keyof DecisionLedger['cCorpSetup'], field: string, value: boolean) => void;
+  updateRegistrationChecklist: (key: keyof RegistrationChecklist, done: boolean) => void;
 }
 
 const DecisionLedgerContext = createContext<DecisionLedgerContextValue | null>(null);
@@ -172,6 +203,22 @@ export const DecisionLedgerProvider: React.FC<{ children: React.ReactNode }> = (
     }));
   }, []);
 
+  const updateRegistrationChecklist = useCallback((
+    key: keyof RegistrationChecklist,
+    done: boolean
+  ) => {
+    setLedger(prev => ({
+      ...prev,
+      registrationChecklist: {
+        ...prev.registrationChecklist,
+        [key]: {
+          ...prev.registrationChecklist[key],
+          done
+        }
+      }
+    }));
+  }, []);
+
   return (
     <DecisionLedgerContext.Provider value={{ 
       ledger, 
@@ -179,7 +226,8 @@ export const DecisionLedgerProvider: React.FC<{ children: React.ReactNode }> = (
       setStep, 
       unlockStep, 
       resetLedger,
-      updateCCorpSetup 
+      updateCCorpSetup,
+      updateRegistrationChecklist
     }}>
       {children}
     </DecisionLedgerContext.Provider>
