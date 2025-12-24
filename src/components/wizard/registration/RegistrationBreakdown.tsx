@@ -7,7 +7,8 @@ import {
   ChevronRight,
   ChevronDown,
   ChevronUp,
-  Info
+  Info,
+  Sparkles
 } from "lucide-react";
 import { useDecisionLedger } from "@/contexts/DecisionLedgerContext";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -43,9 +44,9 @@ export const RegistrationBreakdown = ({ onContinue }: RegistrationBreakdownProps
       { item: 'Expedited processing', cost: '$100–$1,000', required: false }
     ],
     services: [
-      { tier: 'Basic', cost: '$300–$500', includes: 'Filing + registered agent' },
-      { tier: 'Standard', cost: '$500–$1,000', includes: 'Filing + agent + legal docs' },
-      { tier: 'Premium', cost: '$1,500–$3,000', includes: 'Full-service + lawyer review' }
+      { tier: 'Basic', cost: '$300–$500', includes: 'Filing + registered agent', color: 'success' },
+      { tier: 'Standard', cost: '$500–$1,000', includes: 'Filing + agent + legal docs', color: 'warning' },
+      { tier: 'Premium', cost: '$1,500–$3,000', includes: 'Full-service + lawyer review', color: 'primary' }
     ]
   } : {
     government: [
@@ -54,9 +55,9 @@ export const RegistrationBreakdown = ({ onContinue }: RegistrationBreakdownProps
       { item: 'Publication (some states)', cost: '$50–$2,000', required: false }
     ],
     services: [
-      { tier: 'Basic', cost: '$100–$300', includes: 'Filing only' },
-      { tier: 'Standard', cost: '$300–$600', includes: 'Filing + operating agreement' },
-      { tier: 'Premium', cost: '$800–$1,500', includes: 'Full-service + legal docs' }
+      { tier: 'Basic', cost: '$100–$300', includes: 'Filing only', color: 'success' },
+      { tier: 'Standard', cost: '$300–$600', includes: 'Filing + operating agreement', color: 'warning' },
+      { tier: 'Premium', cost: '$800–$1,500', includes: 'Full-service + legal docs', color: 'primary' }
     ]
   };
 
@@ -72,21 +73,33 @@ export const RegistrationBreakdown = ({ onContinue }: RegistrationBreakdownProps
     { where: 'Accounting Tool', what: 'Track finances (recommended)', link: 'QuickBooks, Wave, Xero' }
   ];
 
+  const tierColors = {
+    success: 'bg-success/10 border-success/30 hover:bg-success/20',
+    warning: 'bg-warning/10 border-warning/30 hover:bg-warning/20',
+    primary: 'bg-primary/10 border-primary/30 hover:bg-primary/20'
+  };
+
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl md:text-3xl font-bold">Registration Details</h2>
-        <p className="text-muted-foreground mt-2">
-          {isDelawareCCorp ? 'Delaware C-Corp' : ledger.entityType === 'llc' ? 'LLC' : 'Your entity'} breakdown
-        </p>
+    <div className="space-y-6 animate-fade-in">
+      {/* Header */}
+      <div className="flex items-center gap-4">
+        <div className="w-14 h-14 rounded-2xl bg-gradient-accent flex items-center justify-center shadow-lg">
+          <Sparkles className="h-7 w-7 text-accent-foreground" />
+        </div>
+        <div>
+          <h2 className="text-2xl md:text-3xl font-display font-bold">Registration Details</h2>
+          <p className="text-muted-foreground">
+            {isDelawareCCorp ? 'Delaware C-Corp' : ledger.entityType === 'llc' ? 'LLC' : 'Your entity'} breakdown
+          </p>
+        </div>
       </div>
 
       {/* Time Section */}
       <Collapsible open={expandedSection === 'time'} onOpenChange={(open) => setExpandedSection(open ? 'time' : null)}>
         <CollapsibleTrigger asChild>
-          <button className="w-full flex items-center gap-4 p-4 border-2 border-border hover:bg-secondary transition-colors text-left">
-            <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center shrink-0">
-              <Clock className="h-5 w-5" />
+          <button className="w-full flex items-center gap-4 p-4 bg-card rounded-xl border border-border/50 shadow-sm hover:shadow-md transition-all text-left group">
+            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <Clock className="h-6 w-6 text-primary" />
             </div>
             <div className="flex-1">
               <p className="font-bold">How long does it take?</p>
@@ -96,17 +109,17 @@ export const RegistrationBreakdown = ({ onContinue }: RegistrationBreakdownProps
           </button>
         </CollapsibleTrigger>
         <CollapsibleContent>
-          <div className="border-2 border-t-0 border-border p-4 space-y-4">
+          <div className="mt-2 bg-muted/30 rounded-xl p-4 space-y-4">
             {/* Timeline Bar */}
             <div className="space-y-3">
               {timelineSteps.map((step, i) => (
                 <div key={step.label} className="flex items-center gap-4">
                   <div className="w-20 shrink-0">
-                    <span className="text-sm font-mono text-muted-foreground">{step.time}</span>
+                    <span className="text-sm font-mono text-primary font-bold">{step.time}</span>
                   </div>
-                  <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
+                  <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
                     <div 
-                      className="h-full bg-foreground transition-all"
+                      className="h-full progress-gradient transition-all"
                       style={{ width: `${((i + 1) / timelineSteps.length) * 100}%` }}
                     />
                   </div>
@@ -119,13 +132,14 @@ export const RegistrationBreakdown = ({ onContinue }: RegistrationBreakdownProps
             </div>
             
             <div className="flex gap-2 pt-2 border-t border-border">
-              <Button size="sm" onClick={() => setExpandedSection('cost')}>
+              <Button size="sm" onClick={() => setExpandedSection('cost')} className="rounded-lg">
                 Okay, continue
               </Button>
               <Button 
                 variant="outline" 
                 size="sm"
                 onClick={() => setShowTimeExplainer(!showTimeExplainer)}
+                className="rounded-lg"
               >
                 <Info className="h-3 w-3 mr-1" />
                 Why this long?
@@ -133,10 +147,10 @@ export const RegistrationBreakdown = ({ onContinue }: RegistrationBreakdownProps
             </div>
 
             {showTimeExplainer && (
-              <div className="bg-muted p-3 text-sm space-y-2">
-                <p><strong>State processing:</strong> Government offices have queues. Expediting costs extra.</p>
-                <p><strong>EIN:</strong> Instant online, but only during IRS hours (7am–10pm ET).</p>
-                <p><strong>Bank:</strong> KYC checks take time. Online banks are faster than traditional.</p>
+              <div className="bg-card rounded-lg p-4 text-sm space-y-2 border border-border/50">
+                <p><strong className="text-primary">State processing:</strong> Government offices have queues. Expediting costs extra.</p>
+                <p><strong className="text-primary">EIN:</strong> Instant online, but only during IRS hours (7am–10pm ET).</p>
+                <p><strong className="text-primary">Bank:</strong> KYC checks take time. Online banks are faster than traditional.</p>
               </div>
             )}
           </div>
@@ -146,9 +160,9 @@ export const RegistrationBreakdown = ({ onContinue }: RegistrationBreakdownProps
       {/* Cost Section */}
       <Collapsible open={expandedSection === 'cost'} onOpenChange={(open) => setExpandedSection(open ? 'cost' : null)}>
         <CollapsibleTrigger asChild>
-          <button className="w-full flex items-center gap-4 p-4 border-2 border-border hover:bg-secondary transition-colors text-left">
-            <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center shrink-0">
-              <DollarSign className="h-5 w-5" />
+          <button className="w-full flex items-center gap-4 p-4 bg-card rounded-xl border border-border/50 shadow-sm hover:shadow-md transition-all text-left group">
+            <div className="w-12 h-12 rounded-xl bg-success/10 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <DollarSign className="h-6 w-6 text-success" />
             </div>
             <div className="flex-1">
               <p className="font-bold">How much does it cost?</p>
@@ -160,39 +174,46 @@ export const RegistrationBreakdown = ({ onContinue }: RegistrationBreakdownProps
           </button>
         </CollapsibleTrigger>
         <CollapsibleContent>
-          <div className="border-2 border-t-0 border-border p-4 space-y-4">
+          <div className="mt-2 bg-muted/30 rounded-xl p-4 space-y-4">
             <div>
-              <p className="font-bold text-sm mb-2">Government Fees (Required)</p>
+              <p className="font-bold text-sm mb-3 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-destructive"></span>
+                Government Fees (Required)
+              </p>
               <div className="space-y-2">
                 {costBreakdown.government.map((fee) => (
-                  <div key={fee.item} className="flex justify-between text-sm">
-                    <span className={fee.required ? '' : 'text-muted-foreground'}>{fee.item}</span>
-                    <span className="font-mono">{fee.cost}</span>
+                  <div key={fee.item} className="flex justify-between text-sm bg-card p-3 rounded-lg border border-border/50">
+                    <span className={fee.required ? 'font-medium' : 'text-muted-foreground'}>{fee.item}</span>
+                    <span className="font-mono font-bold">{fee.cost}</span>
                   </div>
                 ))}
               </div>
             </div>
 
             <div>
-              <p className="font-bold text-sm mb-2">Service Tiers (Optional)</p>
+              <p className="font-bold text-sm mb-3 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-accent"></span>
+                Service Tiers (Optional)
+              </p>
               <div className="grid gap-2">
                 {costBreakdown.services.map((tier) => (
-                  <div key={tier.tier} className="border border-border p-3">
-                    <div className="flex justify-between">
-                      <span className="font-medium">{tier.tier}</span>
-                      <span className="font-mono">{tier.cost}</span>
+                  <div key={tier.tier} className={`border rounded-xl p-4 transition-colors ${tierColors[tier.color as keyof typeof tierColors]}`}>
+                    <div className="flex justify-between items-center">
+                      <span className="font-bold">{tier.tier}</span>
+                      <span className="font-mono text-lg font-bold">{tier.cost}</span>
                     </div>
-                    <p className="text-xs text-muted-foreground">{tier.includes}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{tier.includes}</p>
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="flex gap-2 pt-2 border-t border-border">
+            <div className="flex flex-wrap gap-2 pt-2 border-t border-border">
               <Button 
                 size="sm" 
                 variant={budgetFit === 'fits' ? 'default' : 'outline'}
                 onClick={() => { setBudgetFit('fits'); setExpandedSection('location'); }}
+                className="rounded-lg"
               >
                 Fits my budget
               </Button>
@@ -200,6 +221,7 @@ export const RegistrationBreakdown = ({ onContinue }: RegistrationBreakdownProps
                 size="sm" 
                 variant={budgetFit === 'cheaper' ? 'default' : 'outline'}
                 onClick={() => { setBudgetFit('cheaper'); setExpandedSection('location'); }}
+                className="rounded-lg"
               >
                 Show cheaper
               </Button>
@@ -207,6 +229,7 @@ export const RegistrationBreakdown = ({ onContinue }: RegistrationBreakdownProps
                 size="sm" 
                 variant={budgetFit === 'done-for-me' ? 'default' : 'outline'}
                 onClick={() => { setBudgetFit('done-for-me'); setExpandedSection('location'); }}
+                className="rounded-lg"
               >
                 Done-for-me
               </Button>
@@ -218,9 +241,9 @@ export const RegistrationBreakdown = ({ onContinue }: RegistrationBreakdownProps
       {/* Location Section */}
       <Collapsible open={expandedSection === 'location'} onOpenChange={(open) => setExpandedSection(open ? 'location' : null)}>
         <CollapsibleTrigger asChild>
-          <button className="w-full flex items-center gap-4 p-4 border-2 border-border hover:bg-secondary transition-colors text-left">
-            <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center shrink-0">
-              <MapPin className="h-5 w-5" />
+          <button className="w-full flex items-center gap-4 p-4 bg-card rounded-xl border border-border/50 shadow-sm hover:shadow-md transition-all text-left group">
+            <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <MapPin className="h-6 w-6 text-accent" />
             </div>
             <div className="flex-1">
               <p className="font-bold">Where exactly do I register?</p>
@@ -230,27 +253,27 @@ export const RegistrationBreakdown = ({ onContinue }: RegistrationBreakdownProps
           </button>
         </CollapsibleTrigger>
         <CollapsibleContent>
-          <div className="border-2 border-t-0 border-border p-4 space-y-4">
+          <div className="mt-2 bg-muted/30 rounded-xl p-4 space-y-4">
             <div className="space-y-3">
               {locationSteps.map((step, i) => (
-                <div key={step.where} className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full bg-foreground text-background flex items-center justify-center shrink-0 text-xs font-bold">
+                <div key={step.where} className="flex items-start gap-4 bg-card p-4 rounded-xl border border-border/50">
+                  <div className="w-8 h-8 rounded-lg bg-gradient-primary text-primary-foreground flex items-center justify-center shrink-0 text-sm font-bold">
                     {i + 1}
                   </div>
                   <div>
-                    <p className="font-medium">{step.where}</p>
+                    <p className="font-bold">{step.where}</p>
                     <p className="text-sm text-muted-foreground">{step.what}</p>
-                    <p className="text-xs text-muted-foreground/70">{step.link}</p>
+                    <p className="text-xs text-primary mt-1">{step.link}</p>
                   </div>
                 </div>
               ))}
             </div>
 
             <div className="flex gap-2 pt-2 border-t border-border">
-              <Button size="sm" onClick={onContinue}>
+              <Button size="sm" onClick={onContinue} className="rounded-lg">
                 Continue to services
               </Button>
-              <Button variant="outline" size="sm" onClick={onContinue}>
+              <Button variant="outline" size="sm" onClick={onContinue} className="rounded-lg">
                 Skip details
               </Button>
             </div>
@@ -261,7 +284,7 @@ export const RegistrationBreakdown = ({ onContinue }: RegistrationBreakdownProps
       <Button 
         onClick={onContinue}
         size="lg"
-        className="w-full gap-2"
+        className="w-full gap-2 bg-gradient-primary hover:opacity-90 text-primary-foreground font-bold text-lg h-14 rounded-xl shadow-lg btn-glow-primary transition-all"
       >
         View Services & Create Checklist
         <ChevronRight className="h-5 w-5" />

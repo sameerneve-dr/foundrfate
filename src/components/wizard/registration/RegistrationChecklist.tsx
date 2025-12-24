@@ -9,7 +9,9 @@ import {
   User,
   Building2,
   Clock,
-  DollarSign
+  DollarSign,
+  Sparkles,
+  Trophy
 } from "lucide-react";
 import { useDecisionLedger, type RegistrationChecklist as ChecklistType } from "@/contexts/DecisionLedgerContext";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -98,31 +100,51 @@ export const RegistrationChecklist = ({ onComplete }: RegistrationChecklistProps
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl md:text-3xl font-bold">Your Registration Plan</h2>
-        <p className="text-muted-foreground mt-2">
-          Personalized for {isDelawareCCorp ? 'Delaware C-Corp' : ledger.entityType === 'llc' ? 'LLC' : 'your entity'} • {path === 'diy-checklist' ? 'DIY' : path === 'service-checklist' ? 'Service-based' : 'Hybrid'} path
-        </p>
+    <div className="space-y-6 animate-fade-in">
+      {/* Header */}
+      <div className="flex items-center gap-4">
+        <div className="w-14 h-14 rounded-2xl bg-gradient-success flex items-center justify-center shadow-lg">
+          <Sparkles className="h-7 w-7 text-success-foreground" />
+        </div>
+        <div>
+          <h2 className="text-2xl md:text-3xl font-display font-bold">Your Registration Plan</h2>
+          <p className="text-muted-foreground">
+            {isDelawareCCorp ? 'Delaware C-Corp' : ledger.entityType === 'llc' ? 'LLC' : 'Your entity'} • 
+            <span className="capitalize ml-1">{path.replace('-', ' ')}</span> path
+          </p>
+        </div>
       </div>
 
-      {/* Progress */}
-      <div className="border-2 border-border p-4 space-y-2">
-        <div className="flex justify-between text-sm">
-          <span className="font-bold">Registration Progress</span>
-          <span className="font-mono">{percentage}%</span>
+      {/* Progress Card */}
+      <div className={`rounded-2xl p-5 ${percentage === 100 ? 'bg-verdict-yes' : 'bg-gradient-hero border border-border/50'}`}>
+        <div className="flex justify-between items-center mb-3">
+          <div className="flex items-center gap-2">
+            {percentage === 100 ? (
+              <Trophy className="h-5 w-5 text-success-foreground" />
+            ) : (
+              <Sparkles className="h-5 w-5 text-primary" />
+            )}
+            <span className={`font-bold ${percentage === 100 ? 'text-success-foreground' : ''}`}>
+              Registration Progress
+            </span>
+          </div>
+          <span className={`font-mono text-2xl font-bold ${percentage === 100 ? 'text-success-foreground' : 'text-primary'}`}>
+            {percentage}%
+          </span>
         </div>
-        <div className="h-2 bg-secondary rounded-full overflow-hidden">
+        <div className="h-3 bg-muted/50 rounded-full overflow-hidden">
           <div 
-            className="h-full bg-foreground transition-all duration-300"
+            className={`h-full transition-all duration-500 ${percentage === 100 ? 'bg-success-foreground/30' : 'progress-gradient'}`}
             style={{ width: `${percentage}%` }}
           />
         </div>
-        <p className="text-xs text-muted-foreground">{completedCount} of {items.length} steps complete</p>
+        <p className={`text-sm mt-2 ${percentage === 100 ? 'text-success-foreground/80' : 'text-muted-foreground'}`}>
+          {completedCount} of {items.length} steps complete
+        </p>
       </div>
 
       {/* Checklist */}
-      <div className="space-y-2">
+      <div className="space-y-3">
         {items.map((item, index) => {
           const isDone = checklist[item.key].done;
           const doer = getDoer(item.key);
@@ -130,43 +152,49 @@ export const RegistrationChecklist = ({ onComplete }: RegistrationChecklistProps
 
           return (
             <Collapsible key={item.key} open={isExpanded} onOpenChange={(open) => setExpandedItem(open ? item.key : null)}>
-              <div className={`border-2 transition-colors ${isDone ? 'border-foreground/30 bg-muted/50' : 'border-border'}`}>
-                <div className="flex items-start gap-3 p-4">
+              <div className={`bg-card rounded-xl border-2 transition-all ${isDone ? 'border-success/30 bg-success/5' : 'border-border/50 hover:border-primary/30'}`}>
+                <div className="flex items-start gap-4 p-4">
                   <Checkbox
                     id={item.key}
                     checked={isDone}
                     onCheckedChange={(checked) => updateRegistrationChecklist(item.key, checked as boolean)}
-                    className="mt-1"
+                    className="mt-1 h-5 w-5 rounded-md"
                   />
                   <div className="flex-1 min-w-0">
-                    <label htmlFor={item.key} className={`font-medium cursor-pointer ${isDone ? 'line-through text-muted-foreground' : ''}`}>
+                    <label 
+                      htmlFor={item.key} 
+                      className={`font-bold cursor-pointer flex items-center gap-2 ${isDone ? 'line-through text-muted-foreground' : ''}`}
+                    >
+                      <span className="w-6 h-6 rounded-lg bg-primary/10 text-primary text-xs font-bold flex items-center justify-center">
+                        {index + 1}
+                      </span>
                       {item.label}
                     </label>
-                    <p className="text-sm text-muted-foreground">{item.desc}</p>
-                    <div className="flex items-center gap-4 mt-2 text-xs">
-                      <span className="flex items-center gap-1">
+                    <p className="text-sm text-muted-foreground mt-0.5">{item.desc}</p>
+                    <div className="flex items-center gap-4 mt-2">
+                      <span className={`pill text-xs ${doer === 'you' ? 'pill-primary' : 'pill-accent'}`}>
                         {doer === 'you' ? <User className="h-3 w-3" /> : <Building2 className="h-3 w-3" />}
                         {doer === 'you' ? 'You' : 'Service'}
                       </span>
-                      <span className="flex items-center gap-1 text-muted-foreground">
+                      <span className="flex items-center gap-1 text-xs text-muted-foreground">
                         <Clock className="h-3 w-3" />
                         {item.timeEstimate}
                       </span>
-                      <span className="flex items-center gap-1 text-muted-foreground">
+                      <span className="flex items-center gap-1 text-xs text-muted-foreground">
                         <DollarSign className="h-3 w-3" />
                         {item.costEstimate}
                       </span>
                     </div>
                   </div>
                   <CollapsibleTrigger asChild>
-                    <button className="p-2 hover:bg-secondary rounded">
+                    <button className="p-2 hover:bg-muted rounded-lg transition-colors">
                       {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                     </button>
                   </CollapsibleTrigger>
                 </div>
                 <CollapsibleContent>
                   <div className="px-4 pb-4 pt-0 space-y-3">
-                    <div className="bg-muted p-3 text-sm">
+                    <div className="bg-muted/50 p-4 rounded-lg text-sm border border-border/50">
                       <p>{explainers[item.key]}</p>
                     </div>
                     {path === 'hybrid' && item.key !== 'getEIN' && item.key !== 'openBank' && (
@@ -174,6 +202,7 @@ export const RegistrationChecklist = ({ onComplete }: RegistrationChecklistProps
                         variant="outline" 
                         size="sm"
                         onClick={() => toggleDoer(item.key)}
+                        className="rounded-lg"
                       >
                         Switch to {doer === 'you' ? 'Service' : 'DIY'}
                       </Button>
@@ -189,9 +218,19 @@ export const RegistrationChecklist = ({ onComplete }: RegistrationChecklistProps
       <Button 
         onClick={onComplete}
         size="lg"
-        className="w-full gap-2"
+        className="w-full gap-2 bg-gradient-primary hover:opacity-90 text-primary-foreground font-bold text-lg h-14 rounded-xl shadow-lg btn-glow-primary transition-all"
       >
-        {percentage === 100 ? 'Complete Setup' : 'Save & Continue'}
+        {percentage === 100 ? (
+          <>
+            <Trophy className="h-5 w-5" />
+            Complete Setup
+          </>
+        ) : (
+          <>
+            <Check className="h-5 w-5" />
+            Save & Continue
+          </>
+        )}
         <ArrowRight className="h-5 w-5" />
       </Button>
     </div>
