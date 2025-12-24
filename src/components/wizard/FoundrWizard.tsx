@@ -1,5 +1,8 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useDecisionLedger, type ExecutionSection, type ProceedIntent } from "@/contexts/DecisionLedgerContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { useSavedIdeas } from "@/hooks/useSavedIdeas";
 import { useIdeaAnalysis } from "@/hooks/useIdeaAnalysis";
 import { WizardProgress } from "./WizardProgress";
 import { ChoicesSidebar } from "./ChoicesSidebar";
@@ -20,7 +23,8 @@ import { RegistrationModule } from "./registration/RegistrationModule";
 import { LegalEligibilityModule } from "./legal/LegalEligibilityModule";
 import { AgentsModule } from "./agents/AgentsModule";
 import { AnalysisLoading } from "@/components/AnalysisLoading";
-import { ArrowLeft, Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft, Sparkles, Save, LogIn } from "lucide-react";
 
 interface FoundrWizardProps {
   onBack: () => void;
@@ -39,7 +43,10 @@ type WizardView =
   | 'ccorp-setup';
 
 export const FoundrWizard = ({ onBack }: FoundrWizardProps) => {
+  const navigate = useNavigate();
   const { ledger, updateLedger, setStep, resetLedger } = useDecisionLedger();
+  const { user } = useAuth();
+  const { saveIdea, isSaving } = useSavedIdeas();
   const { analyzeIdea, isLoading } = useIdeaAnalysis();
   
   // Main view state
@@ -51,6 +58,16 @@ export const FoundrWizard = ({ onBack }: FoundrWizardProps) => {
   });
 
   const [showPitchDeck, setShowPitchDeck] = useState(false);
+
+  const handleSaveIdea = async () => {
+    if (!user) {
+      navigate('/auth');
+      return;
+    }
+    if (!ledger.ideaSnapshot) return;
+    
+    await saveIdea(ledger.ideaSnapshot, ledger.analysis, ledger);
+  };
 
   const handleAnalyze = async () => {
     if (!ledger.ideaSnapshot) return;
@@ -288,9 +305,32 @@ export const FoundrWizard = ({ onBack }: FoundrWizardProps) => {
             <Sparkles className="h-5 w-5 text-primary" />
             <span className="text-gradient-primary">FoundrFate</span>
           </h1>
-          <span className="pill pill-primary text-xs">
-            {ledger.ideaSnapshot?.ideaName || 'New Idea'}
-          </span>
+          <div className="flex items-center gap-2">
+            {ledger.ideaSnapshot && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSaveIdea}
+                disabled={isSaving}
+                className="gap-1.5"
+              >
+                {user ? (
+                  <>
+                    <Save className="h-3.5 w-3.5" />
+                    {isSaving ? 'Saving...' : 'Save'}
+                  </>
+                ) : (
+                  <>
+                    <LogIn className="h-3.5 w-3.5" />
+                    Sign in to Save
+                  </>
+                )}
+              </Button>
+            )}
+            <span className="pill pill-primary text-xs">
+              {ledger.ideaSnapshot?.ideaName || 'New Idea'}
+            </span>
+          </div>
         </div>
       </header>
 
