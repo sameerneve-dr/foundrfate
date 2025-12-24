@@ -1,16 +1,20 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { 
   Download, 
-  FileText, 
   Presentation, 
   RotateCcw,
-  CheckCircle2,
-  ArrowRight,
-  Sparkles
+  Sparkles,
+  Share2,
+  Copy,
+  Check,
+  Loader2
 } from "lucide-react";
 import { useDecisionLedger } from "@/contexts/DecisionLedgerContext";
 import { usePdfExport } from "@/hooks/usePdfExport";
+import { useShareAnalysis } from "@/hooks/useShareAnalysis";
 
 interface FinalSummaryStepProps {
   onReset: () => void;
@@ -20,6 +24,8 @@ interface FinalSummaryStepProps {
 export const FinalSummaryStep = ({ onReset, onGeneratePitch }: FinalSummaryStepProps) => {
   const { ledger } = useDecisionLedger();
   const { exportToPdf } = usePdfExport();
+  const { shareAnalysis, copyToClipboard, isSharing, shareUrl } = useShareAnalysis();
+  const [copied, setCopied] = useState(false);
 
   const analysis = ledger.analysis;
   if (!analysis || !ledger.ideaSnapshot) return null;
@@ -38,6 +44,16 @@ export const FinalSummaryStep = ({ onReset, onGeneratePitch }: FinalSummaryStepP
       timeline: ''
     };
     exportToPdf(ideaData, analysis);
+  };
+
+  const handleShare = async () => {
+    await shareAnalysis();
+  };
+
+  const handleCopy = async () => {
+    await copyToClipboard();
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   // Generate next 3 actions based on choices
@@ -130,12 +146,49 @@ export const FinalSummaryStep = ({ onReset, onGeneratePitch }: FinalSummaryStepP
       <div className="grid md:grid-cols-2 gap-3">
         <Button onClick={handleExport} size="lg" className="gap-2">
           <Download className="h-5 w-5" />
-          Download Full Report (PDF)
+          Download PDF
         </Button>
         <Button onClick={onGeneratePitch} variant="outline" size="lg" className="gap-2">
           <Presentation className="h-5 w-5" />
           View Pitch Deck
         </Button>
+      </div>
+
+      {/* Share Section */}
+      <div className="border-2 border-border p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <h4 className="font-bold flex items-center gap-2">
+            <Share2 className="h-4 w-4" />
+            Share Your Analysis
+          </h4>
+          {!shareUrl && (
+            <Button onClick={handleShare} disabled={isSharing} size="sm" className="gap-2">
+              {isSharing ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Creating link...
+                </>
+              ) : (
+                <>
+                  <Share2 className="h-4 w-4" />
+                  Get shareable link
+                </>
+              )}
+            </Button>
+          )}
+        </div>
+        {shareUrl && (
+          <div className="flex gap-2">
+            <Input 
+              value={shareUrl} 
+              readOnly 
+              className="font-mono text-sm"
+            />
+            <Button onClick={handleCopy} variant="outline" size="icon">
+              {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+            </Button>
+          </div>
+        )}
       </div>
 
       <Button 
