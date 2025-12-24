@@ -14,23 +14,21 @@ import {
   Calendar,
   ChevronDown,
   ChevronUp,
-  RotateCcw
+  RotateCcw,
+  Lightbulb,
+  Presentation
 } from "lucide-react";
 import type { IdeaData } from "@/pages/Index";
+import type { AnalysisResult as AnalysisData } from "@/hooks/useIdeaAnalysis";
 
 interface AnalysisResultProps {
   ideaData: IdeaData;
+  analysis: AnalysisData;
   onReset: () => void;
 }
 
-type DecisionType = "yes" | "conditional" | "no";
-
-export const AnalysisResult = ({ ideaData, onReset }: AnalysisResultProps) => {
+export const AnalysisResult = ({ ideaData, analysis, onReset }: AnalysisResultProps) => {
   const [expandedSections, setExpandedSections] = useState<string[]>(["decision", "competitors"]);
-
-  // Simulated analysis - in production this would come from AI
-  const decision: DecisionType = ideaData.purpose === "hackathon" ? "yes" : 
-    ideaData.existingAlternatives.toLowerCase().includes("many") ? "conditional" : "yes";
 
   const toggleSection = (section: string) => {
     setExpandedSections(prev => 
@@ -39,6 +37,8 @@ export const AnalysisResult = ({ ideaData, onReset }: AnalysisResultProps) => {
         : [...prev, section]
     );
   };
+
+  const decision = analysis.decision;
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -73,11 +73,7 @@ export const AnalysisResult = ({ ideaData, onReset }: AnalysisResultProps) => {
               </Badge>
               <h2 className="text-3xl md:text-4xl font-bold">{ideaData.ideaName}</h2>
               <p className="text-muted-foreground text-lg">
-                {decision === "yes" 
-                  ? "This idea has strong fundamentals and clear market potential."
-                  : decision === "conditional"
-                  ? "This idea needs refinement before it's ready for execution."
-                  : "The market dynamics don't support this idea in its current form."}
+                {analysis.decisionRationale.summary}
               </p>
             </div>
           </div>
@@ -97,15 +93,39 @@ export const AnalysisResult = ({ ideaData, onReset }: AnalysisResultProps) => {
           >
             <div className="space-y-4">
               <div className="grid md:grid-cols-2 gap-4">
-                <MetricCard label="Market Saturation" value="Low" positive />
-                <MetricCard label="Differentiation" value="Strong" positive />
-                <MetricCard label="User Urgency" value="High" positive />
-                <MetricCard label="Execution Complexity" value="Medium" />
+                <MetricCard 
+                  label="Market Saturation" 
+                  value={analysis.decisionRationale.marketSaturation.toUpperCase()} 
+                  positive={analysis.decisionRationale.marketSaturation === "low"} 
+                />
+                <MetricCard 
+                  label="Differentiation" 
+                  value={analysis.decisionRationale.differentiation.toUpperCase()} 
+                  positive={analysis.decisionRationale.differentiation === "strong"} 
+                />
+                <MetricCard 
+                  label="User Urgency" 
+                  value={analysis.decisionRationale.userUrgency.toUpperCase()} 
+                  positive={analysis.decisionRationale.userUrgency === "high"} 
+                />
+                <MetricCard 
+                  label="Founder-Market Fit" 
+                  value={analysis.decisionRationale.founderMarketFit.toUpperCase()} 
+                  positive={analysis.decisionRationale.founderMarketFit === "strong"} 
+                />
               </div>
-              <p className="text-muted-foreground">
-                Based on the problem statement and target audience, there's a clear gap in the market 
-                for a solution that {ideaData.proposedSolution.toLowerCase().slice(0, 100)}...
-              </p>
+              <div className="border-2 border-border p-4 bg-secondary">
+                <p className="font-medium">Real Need Assessment</p>
+                <p className="text-muted-foreground mt-2">{analysis.realNeedAnalysis.explanation}</p>
+                <div className="flex gap-4 mt-3 text-sm">
+                  <Badge variant={analysis.realNeedAnalysis.isPainkiller ? "default" : "secondary"}>
+                    {analysis.realNeedAnalysis.isPainkiller ? "💊 Painkiller" : "💊 Vitamin"}
+                  </Badge>
+                  <Badge variant={analysis.realNeedAnalysis.willingness === "Users need this" ? "default" : "destructive"}>
+                    {analysis.realNeedAnalysis.willingness}
+                  </Badge>
+                </div>
+              </div>
             </div>
           </AnalysisSection>
 
@@ -117,22 +137,43 @@ export const AnalysisResult = ({ ideaData, onReset }: AnalysisResultProps) => {
             onToggle={() => toggleSection("competitors")}
           >
             <div className="space-y-4">
-              <p className="text-sm text-muted-foreground font-mono uppercase tracking-wider">
-                Based on your input: "{ideaData.existingAlternatives.slice(0, 50)}..."
-              </p>
-              <div className="grid gap-3">
-                <CompetitorCard 
-                  name="Direct Competitors"
-                  description="Solutions directly addressing the same problem"
-                  strength="Established user base"
-                  weakness="Often overcomplicated"
-                />
-                <CompetitorCard 
-                  name="Indirect Competitors"
-                  description="Adjacent solutions users might use instead"
-                  strength="Lower switching cost"
-                  weakness="Not purpose-built"
-                />
+              <div className="flex gap-2 flex-wrap">
+                <Badge variant={analysis.competitiveLandscape.marketCrowded ? "destructive" : "default"}>
+                  {analysis.competitiveLandscape.marketCrowded ? "⚠️ Market Crowded" : "✓ Market Has Room"}
+                </Badge>
+              </div>
+              
+              {analysis.competitiveLandscape.directCompetitors.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm font-mono uppercase tracking-wider text-muted-foreground">Direct Competitors</p>
+                  <div className="grid gap-3">
+                    {analysis.competitiveLandscape.directCompetitors.map((comp, i) => (
+                      <CompetitorCard key={i} {...comp} />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {analysis.competitiveLandscape.indirectCompetitors.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm font-mono uppercase tracking-wider text-muted-foreground">Indirect Competitors</p>
+                  <div className="grid gap-3">
+                    {analysis.competitiveLandscape.indirectCompetitors.map((comp, i) => (
+                      <CompetitorCard key={i} {...comp} />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="border-2 border-border p-4">
+                  <p className="text-sm font-mono uppercase text-muted-foreground mb-2">What's Already Solved</p>
+                  <p className="text-sm">{analysis.competitiveLandscape.whatIsSolved}</p>
+                </div>
+                <div className="border-2 border-border p-4 bg-secondary">
+                  <p className="text-sm font-mono uppercase text-muted-foreground mb-2">Your Opportunity</p>
+                  <p className="text-sm">{analysis.competitiveLandscape.whatIsNot}</p>
+                </div>
               </div>
             </div>
           </AnalysisSection>
@@ -146,49 +187,44 @@ export const AnalysisResult = ({ ideaData, onReset }: AnalysisResultProps) => {
           >
             <div className="space-y-4">
               <div className="border-2 border-border p-4 bg-secondary">
-                <p className="text-lg font-medium">
-                  {ideaData.scaleIntent === "venture-scale" 
-                    ? "This is a painkiller, not a vitamin."
-                    : ideaData.scaleIntent === "lifestyle"
-                    ? "This serves a real, recurring need."
-                    : "This addresses a genuine social gap."}
-                </p>
+                <p className="text-lg">{analysis.valueAnalysis.whyExist}</p>
               </div>
-              <div className="grid md:grid-cols-3 gap-4">
-                <ValueCard label="Time Saved" value="~5 hrs/week" />
-                <ValueCard label="Money Saved" value="$200-500/mo" />
-                <ValueCard label="Risk Reduced" value="Significant" />
+              <div className="grid md:grid-cols-4 gap-4">
+                <ValueCard label="Time Saved" value={analysis.valueAnalysis.timeSaved} />
+                <ValueCard label="Money Saved" value={analysis.valueAnalysis.moneySaved} />
+                <ValueCard label="Risk Reduced" value={analysis.valueAnalysis.riskReduced} />
+                <ValueCard label="Revenue Impact" value={analysis.valueAnalysis.revenueUnlocked} />
               </div>
             </div>
           </AnalysisSection>
 
           <AnalysisSection
             id="pitch"
-            icon={<FileText className="h-5 w-5" />}
-            title="Pitch Deck Outline"
+            icon={<Presentation className="h-5 w-5" />}
+            title="Pitch Story"
             expanded={expandedSections.includes("pitch")}
             onToggle={() => toggleSection("pitch")}
           >
-            <div className="grid md:grid-cols-2 gap-3">
-              {[
-                "1. Problem",
-                "2. Why Now",
-                "3. Solution",
-                "4. Product Demo",
-                "5. Market Size",
-                "6. Competition",
-                "7. Differentiation",
-                "8. Business Model",
-                "9. Traction Plan",
-                "10. Go-to-Market",
-                "11. Team",
-                "12. Roadmap",
-                "13. The Ask"
-              ].map((slide) => (
-                <div key={slide} className="border-2 border-border p-3 hover:bg-secondary transition-colors">
-                  <span className="font-mono text-sm">{slide}</span>
-                </div>
-              ))}
+            <div className="border-2 border-border p-6 bg-secondary">
+              <p className="whitespace-pre-line leading-relaxed">{analysis.pitchStory}</p>
+            </div>
+          </AnalysisSection>
+
+          <AnalysisSection
+            id="deck"
+            icon={<FileText className="h-5 w-5" />}
+            title="Pitch Deck Outline"
+            expanded={expandedSections.includes("deck")}
+            onToggle={() => toggleSection("deck")}
+          >
+            <div className="grid gap-3">
+              <DeckSlide number={1} title="Problem" content={analysis.pitchDeck.problem} />
+              <DeckSlide number={2} title="Why Now" content={analysis.pitchDeck.whyNow} />
+              <DeckSlide number={3} title="Solution" content={analysis.pitchDeck.solution} />
+              <DeckSlide number={4} title="Market Size" content={analysis.pitchDeck.marketSize} />
+              <DeckSlide number={5} title="Business Model" content={analysis.pitchDeck.businessModel} />
+              <DeckSlide number={6} title="Go-to-Market" content={analysis.pitchDeck.goToMarket} />
+              <DeckSlide number={7} title="Differentiator" content={analysis.pitchDeck.differentiator} />
             </div>
           </AnalysisSection>
 
@@ -203,16 +239,19 @@ export const AnalysisResult = ({ ideaData, onReset }: AnalysisResultProps) => {
               <div className="grid md:grid-cols-2 gap-4">
                 <RecommendationCard 
                   title="Entity Type"
-                  recommendation={ideaData.scaleIntent === "venture-scale" ? "Delaware C-Corp" : "LLC"}
-                  reason={ideaData.scaleIntent === "venture-scale" 
-                    ? "Required for VC funding, standard for startups"
-                    : "Simpler structure, pass-through taxation"}
+                  recommendation={analysis.companyFormation.entityType}
+                  reason={analysis.companyFormation.entityReason}
                 />
                 <RecommendationCard 
                   title="When to Incorporate"
-                  recommendation="After validation"
-                  reason="Don't spend money until you've talked to 10+ potential users"
+                  recommendation={analysis.companyFormation.whenToIncorporate}
+                  reason={analysis.companyFormation.equityAdvice}
                 />
+              </div>
+              <div className="border-2 border-border p-4">
+                <p className="text-sm font-mono uppercase text-muted-foreground mb-2">Profit Structure</p>
+                <p className="font-bold">{analysis.profitStructure.recommendation}</p>
+                <p className="text-sm text-muted-foreground mt-1">{analysis.profitStructure.reason}</p>
               </div>
             </div>
           </AnalysisSection>
@@ -228,25 +267,45 @@ export const AnalysisResult = ({ ideaData, onReset }: AnalysisResultProps) => {
               <TimelineItem 
                 phase="Month 0-1"
                 title="Validation"
-                tasks={["User interviews", "Problem validation", "Solution testing"]}
+                tasks={analysis.timeline.month0to1}
               />
               <TimelineItem 
                 phase="Month 2-3"
                 title="MVP"
-                tasks={["Core feature build", "Landing page", "Early access list"]}
+                tasks={analysis.timeline.month2to3}
               />
               <TimelineItem 
                 phase="Month 4-6"
                 title="Early Users"
-                tasks={["Launch to waitlist", "Iterate on feedback", "Establish metrics"]}
+                tasks={analysis.timeline.month4to6}
               />
               <TimelineItem 
                 phase="Month 7+"
                 title="Scale"
-                tasks={["Fundraising prep", "Team expansion", "Growth experiments"]}
+                tasks={analysis.timeline.month7plus}
               />
             </div>
           </AnalysisSection>
+
+          {analysis.pivotSuggestions && analysis.pivotSuggestions.length > 0 && (
+            <AnalysisSection
+              id="pivots"
+              icon={<Lightbulb className="h-5 w-5" />}
+              title="Alternative Approaches"
+              expanded={expandedSections.includes("pivots")}
+              onToggle={() => toggleSection("pivots")}
+            >
+              <div className="grid gap-3">
+                {analysis.pivotSuggestions.map((pivot, i) => (
+                  <div key={i} className="border-2 border-border p-4 space-y-2">
+                    <p className="font-bold">{pivot.title}</p>
+                    <p className="text-sm text-muted-foreground">{pivot.description}</p>
+                    <p className="text-sm text-foreground">💡 {pivot.whyBetter}</p>
+                  </div>
+                ))}
+              </div>
+            </AnalysisSection>
+          )}
 
         </div>
       </div>
@@ -273,7 +332,7 @@ export const AnalysisResult = ({ ideaData, onReset }: AnalysisResultProps) => {
   );
 };
 
-const DecisionIcon = ({ decision }: { decision: DecisionType }) => {
+const DecisionIcon = ({ decision }: { decision: "yes" | "conditional" | "no" }) => {
   const iconClass = "h-16 w-16 md:h-20 md:w-20";
   if (decision === "yes") return <CheckCircle2 className={`${iconClass} text-foreground`} />;
   if (decision === "conditional") return <AlertTriangle className={`${iconClass} text-foreground`} />;
@@ -323,29 +382,42 @@ const MetricCard = ({ label, value, positive }: { label: string; value: string; 
 
 const CompetitorCard = ({ 
   name, 
-  description, 
+  coreOffering,
   strength, 
-  weakness 
+  weakness,
+  marketGap
 }: { 
   name: string; 
-  description: string; 
+  coreOffering: string; 
   strength: string; 
   weakness: string;
+  marketGap?: string;
 }) => (
   <div className="border-2 border-border p-4 space-y-2">
     <h4 className="font-bold">{name}</h4>
-    <p className="text-sm text-muted-foreground">{description}</p>
-    <div className="flex gap-4 text-sm">
+    <p className="text-sm text-muted-foreground">{coreOffering}</p>
+    <div className="flex flex-col gap-1 text-sm">
       <span className="text-foreground">✓ {strength}</span>
       <span className="text-muted-foreground">✗ {weakness}</span>
+      {marketGap && <span className="text-foreground">→ Gap: {marketGap}</span>}
     </div>
   </div>
 );
 
 const ValueCard = ({ label, value }: { label: string; value: string }) => (
   <div className="border-2 border-border p-4 text-center">
-    <p className="text-2xl font-bold">{value}</p>
+    <p className="text-lg md:text-xl font-bold">{value}</p>
     <p className="text-sm text-muted-foreground">{label}</p>
+  </div>
+);
+
+const DeckSlide = ({ number, title, content }: { number: number; title: string; content: string }) => (
+  <div className="border-2 border-border p-4 flex gap-4">
+    <div className="font-mono text-2xl font-bold text-muted-foreground">{number}</div>
+    <div className="flex-1">
+      <p className="font-bold">{title}</p>
+      <p className="text-sm text-muted-foreground mt-1">{content}</p>
+    </div>
   </div>
 );
 
