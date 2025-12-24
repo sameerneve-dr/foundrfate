@@ -8,6 +8,41 @@ export type FundraisingIntent = 'venture-scale' | 'bootstrap' | 'mixed' | null;
 export type RegistrationMode = 'diy' | 'service' | 'explain' | null;
 export type RegistrationPath = 'diy-checklist' | 'service-checklist' | 'hybrid' | null;
 
+export type VisaStatus = 
+  | 'us-citizen'
+  | 'green-card'
+  | 'f1-no-opt'
+  | 'f1-opt'
+  | 'f1-stem-opt'
+  | 'h1b'
+  | 'o1'
+  | 'l1'
+  | 'other'
+  | 'not-sure'
+  | null;
+
+export type LegalPathPreference = 
+  | 'opt-to-h1b-to-gc'
+  | 'o1-to-eb1a'
+  | 'cofounder-led'
+  | 'passive-ownership'
+  | 'no-restrictions'
+  | null;
+
+export interface CofounderInfo {
+  id: string;
+  visaStatus: VisaStatus;
+  role: 'technical' | 'business';
+  inUS: boolean;
+}
+
+export interface VisaEligibility {
+  canOwn: 'yes' | 'yes-restrictions' | 'passive-only';
+  canWork: 'yes' | 'conditions' | 'no';
+  allowedRoles: ('founder' | 'shareholder' | 'advisor' | 'employee')[];
+  explanation: string;
+}
+
 export interface RegistrationChecklist {
   chooseName: { done: boolean; doer: 'you' | 'service' };
   fileCertificate: { done: boolean; doer: 'you' | 'service' };
@@ -85,6 +120,14 @@ export interface DecisionLedger {
   registrationPath: RegistrationPath;
   registrationChecklist: RegistrationChecklist;
   
+  // Founder legal eligibility
+  founderVisaStatus: VisaStatus;
+  founderInUS: boolean;
+  hasCofounder: 'no' | 'one' | 'multiple' | null;
+  cofounders: CofounderInfo[];
+  visaEligibility: VisaEligibility | null;
+  legalPathPreference: LegalPathPreference;
+  
   // Current wizard step
   currentStep: number;
   maxUnlockedStep: number;
@@ -122,6 +165,12 @@ const initialLedger: DecisionLedger = {
   registrationMode: null,
   registrationPath: null,
   registrationChecklist: initialChecklist,
+  founderVisaStatus: null,
+  founderInUS: true,
+  hasCofounder: null,
+  cofounders: [],
+  visaEligibility: null,
+  legalPathPreference: null,
   currentStep: 0,
   maxUnlockedStep: 0,
 };
