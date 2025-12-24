@@ -43,9 +43,26 @@ export const FoundrChatbot = () => {
 
   const getContextualResponse = (query: string): string => {
     const q = query.toLowerCase();
+    const hasProceed = ledger.proceedIntent === 'yes' || ledger.proceedIntent === 'conditional';
+    
+    // If user hasn't committed, only answer high-level questions
+    if (!hasProceed) {
+      if (q.includes('proceed') || q.includes('should i') || q.includes('worth it')) {
+        return "Based on the verdict, you should consider the key factors: market opportunity, your differentiation, and user urgency. If you're ready to commit, click 'Yes, proceed' to unlock detailed guidance on legal, visa, and registration steps.";
+      }
+      return "I can answer high-level questions about your idea. Once you decide to proceed, I'll have access to detailed guidance on legal setup, visa requirements, registration, and more. What would you like to know about the verdict?";
+    }
+
+    // Check which sections are unlocked for context
+    const unlockedSections = Object.entries(ledger.unlockedSections)
+      .filter(([_, state]) => state.unlocked)
+      .map(([key]) => key);
     
     // Visa-related questions
     if (q.includes('opt') || q.includes('f-1') || q.includes('visa')) {
+      if (!ledger.unlockedSections['legal-visa'].unlocked) {
+        return "Great question about visa status! I can give you a quick overview: on most visas you can OWN a company, but WORKING for it depends on your specific visa type. For detailed guidance tailored to your situation, unlock the 'Legal & Visa Eligibility' section in your Execution Journey.";
+      }
       if (ledger.founderVisaStatus === 'f1-opt' || ledger.founderVisaStatus === 'f1-stem-opt') {
         return "On OPT/STEM OPT, you CAN own and work for your startup if it's related to your field of study. Key requirements: 1) Maintain proper employment relationship, 2) Your startup must relate to your degree, 3) File all required reports. Many successful founders started on OPT. Would you like me to explain the specific requirements?";
       }

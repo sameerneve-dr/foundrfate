@@ -61,6 +61,21 @@ export interface IdeaSnapshot {
   scaleIntent: 'lifestyle' | 'venture-scale' | 'non-profit';
 }
 
+export type ProceedIntent = 'yes' | 'conditional' | 'no' | null;
+
+export type ExecutionSection = 
+  | 'company-setup'
+  | 'legal-visa'
+  | 'registration'
+  | 'agents-hiring'
+  | 'pitch-deck'
+  | 'timeline-roadmap';
+
+export interface SectionState {
+  unlocked: boolean;
+  detailLevel: 'step-by-step' | 'checklist' | 'skipped' | null;
+}
+
 export interface DecisionLedger {
   // Idea inputs
   ideaSnapshot: IdeaSnapshot | null;
@@ -71,6 +86,12 @@ export interface DecisionLedger {
   // Verdict
   verdict: 'yes' | 'conditional' | 'no' | null;
   verdictAccepted: boolean;
+  
+  // NEW: Proceed intent (the decision gate)
+  proceedIntent: ProceedIntent;
+  
+  // NEW: Unlocked execution sections
+  unlockedSections: Record<ExecutionSection, SectionState>;
   
   // Target customer
   targetCustomer: TargetCustomer;
@@ -143,11 +164,22 @@ const initialChecklist: RegistrationChecklist = {
   ipAssignment: { done: false, doer: 'you' },
 };
 
+const initialSectionState: Record<ExecutionSection, SectionState> = {
+  'company-setup': { unlocked: false, detailLevel: null },
+  'legal-visa': { unlocked: false, detailLevel: null },
+  'registration': { unlocked: false, detailLevel: null },
+  'agents-hiring': { unlocked: false, detailLevel: null },
+  'pitch-deck': { unlocked: false, detailLevel: null },
+  'timeline-roadmap': { unlocked: false, detailLevel: null },
+};
+
 const initialLedger: DecisionLedger = {
   ideaSnapshot: null,
   analysis: null,
   verdict: null,
   verdictAccepted: false,
+  proceedIntent: null,
+  unlockedSections: initialSectionState,
   targetCustomer: null,
   profitType: null,
   profitTypeAccepted: false,

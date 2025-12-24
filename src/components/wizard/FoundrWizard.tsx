@@ -1,12 +1,14 @@
 import { useState } from "react";
-import { useDecisionLedger } from "@/contexts/DecisionLedgerContext";
+import { useDecisionLedger, type ExecutionSection, type ProceedIntent } from "@/contexts/DecisionLedgerContext";
 import { useIdeaAnalysis } from "@/hooks/useIdeaAnalysis";
 import { WizardProgress } from "./WizardProgress";
 import { ChoicesSidebar } from "./ChoicesSidebar";
 import { AnimatedStep } from "./AnimatedStep";
+import { FoundrChatbot } from "./FoundrChatbot";
 import { PitchDeckViewer } from "./PitchDeckViewer";
 import { IdeaSnapshotStep } from "./steps/IdeaSnapshotStep";
-import { VerdictStep } from "./steps/VerdictStep";
+import { VerdictSummary } from "./VerdictSummary";
+import { ExecutionJourney } from "./ExecutionJourney";
 import { TargetCustomerStep } from "./steps/TargetCustomerStep";
 import { ProfitTypeStep } from "./steps/ProfitTypeStep";
 import { FundraisingStep } from "./steps/FundraisingStep";
@@ -23,24 +25,31 @@ interface FoundrWizardProps {
   onBack: () => void;
 }
 
+type WizardView = 
+  | 'idea-input'
+  | 'verdict-summary'
+  | 'execution-journey'
+  | 'company-setup'
+  | 'legal-visa'
+  | 'registration'
+  | 'agents-hiring'
+  | 'pitch-deck'
+  | 'timeline-roadmap'
+  | 'ccorp-setup';
+
 export const FoundrWizard = ({ onBack }: FoundrWizardProps) => {
   const { ledger, updateLedger, setStep, resetLedger } = useDecisionLedger();
   const { analyzeIdea, isLoading } = useIdeaAnalysis();
-  const [showCCorpSetup, setShowCCorpSetup] = useState(false);
-  const [showPitchDeck, setShowPitchDeck] = useState(false);
-  const [showRegistration, setShowRegistration] = useState(false);
-  const [showLegalModule, setShowLegalModule] = useState(false);
+  
+  // Main view state
+  const [currentView, setCurrentView] = useState<WizardView>(() => {
+    if (!ledger.ideaSnapshot || !ledger.analysis) return 'idea-input';
+    if (!ledger.proceedIntent) return 'verdict-summary';
+    if (ledger.proceedIntent === 'no') return 'idea-input';
+    return 'execution-journey';
+  });
 
-  const stepLabels = [
-    "Idea",
-    "Verdict", 
-    "Target",
-    "Profit",
-    "Funding",
-    "Entity",
-    "Timeline",
-    "Summary"
-  ];
+  const [showPitchDeck, setShowPitchDeck] = useState(false);
 
   const handleAnalyze = async () => {
     if (!ledger.ideaSnapshot) return;
@@ -60,31 +69,31 @@ export const FoundrWizard = ({ onBack }: FoundrWizardProps) => {
     const result = await analyzeIdea(ideaData);
     if (result) {
       updateLedger({ analysis: result, verdict: result.decision });
-      setStep(1);
+      setCurrentView('verdict-summary');
     }
   };
 
   const handleReset = () => {
     resetLedger();
-    setShowCCorpSetup(false);
-    setShowPitchDeck(false);
-    setShowRegistration(false);
-    setShowLegalModule(false);
+    setCurrentView('idea-input');
   };
 
-  const handleEntityComplete = () => {
-    // After entity selection, show legal eligibility module
-    setShowLegalModule(true);
-  };
-
-  const handleLegalComplete = () => {
-    setShowLegalModule(false);
-    // If C-Corp, show registration
-    if (ledger.entityType === 'delaware-c-corp') {
-      setShowRegistration(true);
+  const handleProceed = (intent: ProceedIntent) => {
+    if (intent === 'no') {
+      // Reset and start over
+      handleReset();
     } else {
-      setStep(6);
+      // Proceed to execution journey
+      setCurrentView('execution-journey');
     }
+  };
+
+  const handleOpenSection = (section: ExecutionSection) => {
+    setCurrentView(section);
+  };
+
+  const handleSectionComplete = () => {
+    setCurrentView('execution-journey');
   };
 
   // Render pitch deck viewer
@@ -92,38 +101,36 @@ export const FoundrWizard = ({ onBack }: FoundrWizardProps) => {
     return <PitchDeckViewer onClose={() => setShowPitchDeck(false)} />;
   }
 
-  // Render legal eligibility module
-  if (showLegalModule) {
-    return (
-      <LegalEligibilityModule 
-        onComplete={handleLegalComplete} 
-        onBack={() => setShowLegalModule(false)} 
-      />
-    );
-  }
-
-  // Render registration module
-  if (showRegistration) {
-    return (
-      <RegistrationModule 
-        onComplete={() => { setShowRegistration(false); setStep(6); }} 
-        onBack={() => setShowRegistration(false)} 
-      />
-    );
-  }
-
   // Render loading state
   if (isLoading) {
     return <AnalysisLoading ideaName={ledger.ideaSnapshot?.ideaName || 'your idea'} />;
   }
 
-  // Render C-Corp setup wizard as overlay
-  if (showCCorpSetup) {
+  // Render section modules
+  if (currentView === 'legal-visa') {
+    return (
+      <LegalEligibilityModule 
+        onComplete={handleSectionComplete} 
+        onBack={() => setCurrentView('execution-journey')} 
+      />
+    );
+  }
+
+  if (currentView === 'registration') {
+    return (
+      <RegistrationModule 
+        onComplete={handleSectionComplete} 
+        onBack={() => setCurrentView('execution-journey')} 
+      />
+    );
+  }
+
+  if (currentView === 'ccorp-setup') {
     return (
       <div className="min-h-screen flex flex-col bg-background">
         <header className="border-b border-border/50 p-4 bg-card/80 backdrop-blur-sm">
           <div className="container flex items-center justify-between">
-            <button onClick={() => setShowCCorpSetup(false)} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+            <button onClick={() => setCurrentView('company-setup')} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
               <ArrowLeft className="h-4 w-4" />
               <span className="font-medium text-sm">Back</span>
             </button>
@@ -133,36 +140,168 @@ export const FoundrWizard = ({ onBack }: FoundrWizardProps) => {
         </header>
         <div className="flex-1 py-8 px-4 bg-gradient-hero">
           <div className="container max-w-2xl">
-            <CCorpSetupWizard onComplete={() => { setShowCCorpSetup(false); setStep(6); }} />
+            <CCorpSetupWizard onComplete={handleSectionComplete} />
           </div>
         </div>
+        <FoundrChatbot />
       </div>
     );
   }
 
-  const renderStep = () => {
-    switch (ledger.currentStep) {
-      case 0:
-        return <IdeaSnapshotStep onComplete={handleAnalyze} isAnalyzing={isLoading} />;
-      case 1:
-        return <VerdictStep onAccept={() => setStep(2)} onShowPivots={() => setStep(2)} />;
-      case 2:
-        return <TargetCustomerStep onComplete={() => setStep(3)} />;
-      case 3:
-        return <ProfitTypeStep onComplete={() => ledger.profitType === 'for-profit' ? setStep(4) : setStep(5)} />;
-      case 4:
-        return <FundraisingStep onComplete={() => setStep(5)} />;
-      case 5:
-        return <EntityTypeStep onComplete={() => setStep(6)} onCCorpSetup={handleEntityComplete} />;
-      case 6:
-        return <TimelineStep onComplete={() => setStep(7)} />;
-      case 7:
-        return <FinalSummaryStep onReset={handleReset} onGeneratePitch={() => setShowPitchDeck(true)} />;
-      default:
-        return <IdeaSnapshotStep onComplete={handleAnalyze} isAnalyzing={isLoading} />;
-    }
-  };
+  // Render company setup section (entity selection flow)
+  if (currentView === 'company-setup') {
+    const companySetupStep = ledger.currentStep;
+    
+    const renderCompanySetupStep = () => {
+      switch (companySetupStep) {
+        case 0:
+          return <TargetCustomerStep onComplete={() => setStep(1)} />;
+        case 1:
+          return <ProfitTypeStep onComplete={() => ledger.profitType === 'for-profit' ? setStep(2) : setStep(3)} />;
+        case 2:
+          return <FundraisingStep onComplete={() => setStep(3)} />;
+        case 3:
+          return (
+            <EntityTypeStep 
+              onComplete={handleSectionComplete} 
+              onCCorpSetup={() => setCurrentView('ccorp-setup')} 
+            />
+          );
+        default:
+          return <TargetCustomerStep onComplete={() => setStep(1)} />;
+      }
+    };
 
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <header className="border-b border-border/50 p-4 bg-card/80 backdrop-blur-sm sticky top-0 z-10">
+          <div className="container flex items-center justify-between">
+            <button onClick={() => setCurrentView('execution-journey')} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+              <ArrowLeft className="h-4 w-4" />
+              <span className="font-medium text-sm">Back to Journey</span>
+            </button>
+            <h1 className="text-xl font-display font-bold flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              <span className="text-gradient-primary">Company Setup</span>
+            </h1>
+            <span className="pill pill-primary text-xs">
+              {ledger.ideaSnapshot?.ideaName || 'New Idea'}
+            </span>
+          </div>
+        </header>
+
+        <WizardProgress 
+          currentStep={companySetupStep}
+          totalSteps={4}
+          stepLabels={['Target', 'Profit Type', 'Funding', 'Entity']}
+          maxUnlockedStep={Math.max(ledger.maxUnlockedStep, companySetupStep)}
+          onStepClick={(step) => setStep(step)}
+        />
+
+        <div className="flex-1 py-8 px-4 bg-gradient-hero">
+          <div className="container max-w-4xl">
+            <div className="grid lg:grid-cols-[1fr_280px] gap-8">
+              <AnimatedStep stepKey={companySetupStep}>
+                {renderCompanySetupStep()}
+              </AnimatedStep>
+              <div className="hidden lg:block">
+                <div className="sticky top-32 animate-slide-in-right">
+                  <ChoicesSidebar onReset={handleReset} />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <FoundrChatbot />
+      </div>
+    );
+  }
+
+  // Timeline & Roadmap section
+  if (currentView === 'timeline-roadmap') {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <header className="border-b border-border/50 p-4 bg-card/80 backdrop-blur-sm sticky top-0 z-10">
+          <div className="container flex items-center justify-between">
+            <button onClick={() => setCurrentView('execution-journey')} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+              <ArrowLeft className="h-4 w-4" />
+              <span className="font-medium text-sm">Back to Journey</span>
+            </button>
+            <h1 className="text-xl font-display font-bold text-gradient-primary">Timeline & Roadmap</h1>
+            <span className="pill pill-accent text-xs">Planning</span>
+          </div>
+        </header>
+        <div className="flex-1 py-8 px-4 bg-gradient-hero">
+          <div className="container max-w-2xl">
+            <TimelineStep onComplete={handleSectionComplete} />
+          </div>
+        </div>
+        <FoundrChatbot />
+      </div>
+    );
+  }
+
+  // Pitch deck section
+  if (currentView === 'pitch-deck') {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <header className="border-b border-border/50 p-4 bg-card/80 backdrop-blur-sm sticky top-0 z-10">
+          <div className="container flex items-center justify-between">
+            <button onClick={() => setCurrentView('execution-journey')} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+              <ArrowLeft className="h-4 w-4" />
+              <span className="font-medium text-sm">Back to Journey</span>
+            </button>
+            <h1 className="text-xl font-display font-bold text-gradient-primary">Pitch & Deck</h1>
+            <span className="pill pill-primary text-xs">Investor Ready</span>
+          </div>
+        </header>
+        <div className="flex-1 py-8 px-4 bg-gradient-hero">
+          <div className="container max-w-2xl">
+            <FinalSummaryStep onReset={handleReset} onGeneratePitch={() => setShowPitchDeck(true)} />
+          </div>
+        </div>
+        <FoundrChatbot />
+      </div>
+    );
+  }
+
+  // Agents & Hiring section (placeholder)
+  if (currentView === 'agents-hiring') {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <header className="border-b border-border/50 p-4 bg-card/80 backdrop-blur-sm sticky top-0 z-10">
+          <div className="container flex items-center justify-between">
+            <button onClick={() => setCurrentView('execution-journey')} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+              <ArrowLeft className="h-4 w-4" />
+              <span className="font-medium text-sm">Back to Journey</span>
+            </button>
+            <h1 className="text-xl font-display font-bold text-gradient-primary">Agents & Hiring</h1>
+            <span className="pill pill-warning text-xs">Team Building</span>
+          </div>
+        </header>
+        <div className="flex-1 py-8 px-4 bg-gradient-hero">
+          <div className="container max-w-2xl text-center py-16">
+            <div className="w-20 h-20 rounded-2xl bg-gradient-warning flex items-center justify-center mx-auto mb-6">
+              <Sparkles className="h-10 w-10 text-warning-foreground" />
+            </div>
+            <h2 className="text-2xl font-bold mb-2">Coming Soon</h2>
+            <p className="text-muted-foreground mb-6">
+              Registered agent selection, first hire planning, and contractor guidance will be available soon.
+            </p>
+            <button 
+              onClick={() => setCurrentView('execution-journey')}
+              className="text-primary hover:underline font-medium"
+            >
+              Back to Journey
+            </button>
+          </div>
+        </div>
+        <FoundrChatbot />
+      </div>
+    );
+  }
+
+  // Main flow views
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <header className="border-b border-border/50 p-4 bg-card/80 backdrop-blur-sm sticky top-0 z-10">
@@ -181,28 +320,32 @@ export const FoundrWizard = ({ onBack }: FoundrWizardProps) => {
         </div>
       </header>
 
-      <WizardProgress 
-        currentStep={ledger.currentStep}
-        totalSteps={stepLabels.length}
-        stepLabels={stepLabels}
-        maxUnlockedStep={ledger.maxUnlockedStep}
-        onStepClick={(step) => step <= ledger.maxUnlockedStep && setStep(step)}
-      />
-
       <div className="flex-1 py-8 px-4 bg-gradient-hero">
         <div className="container max-w-4xl">
-          <div className="grid lg:grid-cols-[1fr_280px] gap-8">
-            <AnimatedStep stepKey={ledger.currentStep}>
-              {renderStep()}
+          {currentView === 'idea-input' && (
+            <AnimatedStep stepKey="idea">
+              <IdeaSnapshotStep onComplete={handleAnalyze} isAnalyzing={isLoading} />
             </AnimatedStep>
-            <div className="hidden lg:block">
-              <div className="sticky top-32 animate-slide-in-right">
-                <ChoicesSidebar onReset={handleReset} />
-              </div>
-            </div>
-          </div>
+          )}
+
+          {currentView === 'verdict-summary' && (
+            <AnimatedStep stepKey="verdict">
+              <VerdictSummary onProceed={handleProceed} />
+            </AnimatedStep>
+          )}
+
+          {currentView === 'execution-journey' && (
+            <AnimatedStep stepKey="journey">
+              <ExecutionJourney 
+                onOpenSection={handleOpenSection} 
+                onBack={() => setCurrentView('verdict-summary')}
+              />
+            </AnimatedStep>
+          )}
         </div>
       </div>
+
+      <FoundrChatbot />
     </div>
   );
 };
