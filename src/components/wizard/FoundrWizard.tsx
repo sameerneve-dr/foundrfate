@@ -15,8 +15,9 @@ import { CCorpSetupWizard } from "./steps/CCorpSetupWizard";
 import { TimelineStep } from "./steps/TimelineStep";
 import { FinalSummaryStep } from "./steps/FinalSummaryStep";
 import { RegistrationModule } from "./registration/RegistrationModule";
+import { LegalEligibilityModule } from "./legal/LegalEligibilityModule";
 import { AnalysisLoading } from "@/components/AnalysisLoading";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Sparkles } from "lucide-react";
 
 interface FoundrWizardProps {
   onBack: () => void;
@@ -28,6 +29,7 @@ export const FoundrWizard = ({ onBack }: FoundrWizardProps) => {
   const [showCCorpSetup, setShowCCorpSetup] = useState(false);
   const [showPitchDeck, setShowPitchDeck] = useState(false);
   const [showRegistration, setShowRegistration] = useState(false);
+  const [showLegalModule, setShowLegalModule] = useState(false);
 
   const stepLabels = [
     "Idea",
@@ -67,11 +69,37 @@ export const FoundrWizard = ({ onBack }: FoundrWizardProps) => {
     setShowCCorpSetup(false);
     setShowPitchDeck(false);
     setShowRegistration(false);
+    setShowLegalModule(false);
+  };
+
+  const handleEntityComplete = () => {
+    // After entity selection, show legal eligibility module
+    setShowLegalModule(true);
+  };
+
+  const handleLegalComplete = () => {
+    setShowLegalModule(false);
+    // If C-Corp, show registration
+    if (ledger.entityType === 'delaware-c-corp') {
+      setShowRegistration(true);
+    } else {
+      setStep(6);
+    }
   };
 
   // Render pitch deck viewer
   if (showPitchDeck) {
     return <PitchDeckViewer onClose={() => setShowPitchDeck(false)} />;
+  }
+
+  // Render legal eligibility module
+  if (showLegalModule) {
+    return (
+      <LegalEligibilityModule 
+        onComplete={handleLegalComplete} 
+        onBack={() => setShowLegalModule(false)} 
+      />
+    );
   }
 
   // Render registration module
@@ -93,17 +121,17 @@ export const FoundrWizard = ({ onBack }: FoundrWizardProps) => {
   if (showCCorpSetup) {
     return (
       <div className="min-h-screen flex flex-col bg-background">
-        <header className="border-b-2 border-border p-4">
+        <header className="border-b border-border/50 p-4 bg-card/80 backdrop-blur-sm">
           <div className="container flex items-center justify-between">
-            <button onClick={() => setShowCCorpSetup(false)} className="flex items-center gap-2 text-muted-foreground hover:text-foreground">
+            <button onClick={() => setShowCCorpSetup(false)} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
               <ArrowLeft className="h-4 w-4" />
-              <span className="font-mono text-sm">Back</span>
+              <span className="font-medium text-sm">Back</span>
             </button>
-            <h1 className="text-xl font-bold">FoundrFate</h1>
-            <span className="font-mono text-sm text-muted-foreground">C-Corp Setup</span>
+            <h1 className="text-xl font-display font-bold text-gradient-primary">FoundrFate</h1>
+            <span className="pill pill-primary text-xs">C-Corp Setup</span>
           </div>
         </header>
-        <div className="flex-1 py-8 px-4">
+        <div className="flex-1 py-8 px-4 bg-gradient-hero">
           <div className="container max-w-2xl">
             <CCorpSetupWizard onComplete={() => { setShowCCorpSetup(false); setStep(6); }} />
           </div>
@@ -125,7 +153,7 @@ export const FoundrWizard = ({ onBack }: FoundrWizardProps) => {
       case 4:
         return <FundraisingStep onComplete={() => setStep(5)} />;
       case 5:
-        return <EntityTypeStep onComplete={() => setStep(6)} onCCorpSetup={() => setShowRegistration(true)} />;
+        return <EntityTypeStep onComplete={() => setStep(6)} onCCorpSetup={handleEntityComplete} />;
       case 6:
         return <TimelineStep onComplete={() => setStep(7)} />;
       case 7:
@@ -137,14 +165,17 @@ export const FoundrWizard = ({ onBack }: FoundrWizardProps) => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <header className="border-b-2 border-border p-4">
+      <header className="border-b border-border/50 p-4 bg-card/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="container flex items-center justify-between">
-          <button onClick={onBack} className="flex items-center gap-2 text-muted-foreground hover:text-foreground">
+          <button onClick={onBack} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
             <ArrowLeft className="h-4 w-4" />
-            <span className="font-mono text-sm">Back</span>
+            <span className="font-medium text-sm">Back</span>
           </button>
-          <h1 className="text-xl font-bold">FoundrFate</h1>
-          <span className="font-mono text-sm text-muted-foreground">
+          <h1 className="text-xl font-display font-bold flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-primary" />
+            <span className="text-gradient-primary">FoundrFate</span>
+          </h1>
+          <span className="pill pill-primary text-xs">
             {ledger.ideaSnapshot?.ideaName || 'New Idea'}
           </span>
         </div>
@@ -158,14 +189,14 @@ export const FoundrWizard = ({ onBack }: FoundrWizardProps) => {
         onStepClick={(step) => step <= ledger.maxUnlockedStep && setStep(step)}
       />
 
-      <div className="flex-1 py-8 px-4">
+      <div className="flex-1 py-8 px-4 bg-gradient-hero">
         <div className="container max-w-4xl">
           <div className="grid lg:grid-cols-[1fr_280px] gap-8">
             <AnimatedStep stepKey={ledger.currentStep}>
               {renderStep()}
             </AnimatedStep>
             <div className="hidden lg:block">
-              <div className="sticky top-24 animate-slide-in-right">
+              <div className="sticky top-32 animate-slide-in-right">
                 <ChoicesSidebar onReset={handleReset} />
               </div>
             </div>
