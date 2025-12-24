@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { 
   ArrowLeft, 
   CheckCircle2, 
@@ -16,19 +17,28 @@ import {
   ChevronUp,
   RotateCcw,
   Lightbulb,
-  Presentation
+  Presentation,
+  Download,
+  RefreshCw,
+  Loader2
 } from "lucide-react";
 import type { IdeaData } from "@/pages/Index";
 import type { AnalysisResult as AnalysisData } from "@/hooks/useIdeaAnalysis";
+import { usePdfExport } from "@/hooks/usePdfExport";
+import { useSectionRegenerate, type RegenerateSection } from "@/hooks/useSectionRegenerate";
 
 interface AnalysisResultProps {
   ideaData: IdeaData;
   analysis: AnalysisData;
   onReset: () => void;
+  onAnalysisUpdate: (analysis: AnalysisData) => void;
 }
 
-export const AnalysisResult = ({ ideaData, analysis, onReset }: AnalysisResultProps) => {
+export const AnalysisResult = ({ ideaData, analysis, onReset, onAnalysisUpdate }: AnalysisResultProps) => {
   const [expandedSections, setExpandedSections] = useState<string[]>(["decision", "competitors"]);
+  const [customInstructions, setCustomInstructions] = useState<Record<string, string>>({});
+  const { exportToPdf } = usePdfExport();
+  const { regenerateSection, regeneratingSection, isRegenerating } = useSectionRegenerate();
 
   const toggleSection = (section: string) => {
     setExpandedSections(prev => 
@@ -36,6 +46,23 @@ export const AnalysisResult = ({ ideaData, analysis, onReset }: AnalysisResultPr
         ? prev.filter(s => s !== section)
         : [...prev, section]
     );
+  };
+
+  const handleRegenerate = async (section: RegenerateSection) => {
+    const updatedAnalysis = await regenerateSection(
+      section,
+      ideaData,
+      analysis,
+      customInstructions[section]
+    );
+    if (updatedAnalysis) {
+      onAnalysisUpdate(updatedAnalysis);
+      setCustomInstructions(prev => ({ ...prev, [section]: '' }));
+    }
+  };
+
+  const handleExportPdf = () => {
+    exportToPdf(ideaData, analysis);
   };
 
   const decision = analysis.decision;
@@ -175,6 +202,14 @@ export const AnalysisResult = ({ ideaData, analysis, onReset }: AnalysisResultPr
                   <p className="text-sm">{analysis.competitiveLandscape.whatIsNot}</p>
                 </div>
               </div>
+              
+              <RegenerateControls
+                sectionId="competitors"
+                customInstructions={customInstructions.competitors || ''}
+                onInstructionsChange={(v) => setCustomInstructions(prev => ({ ...prev, competitors: v }))}
+                onRegenerate={() => handleRegenerate("competitors")}
+                isRegenerating={regeneratingSection === "competitors"}
+              />
             </div>
           </AnalysisSection>
 
@@ -195,6 +230,14 @@ export const AnalysisResult = ({ ideaData, analysis, onReset }: AnalysisResultPr
                 <ValueCard label="Risk Reduced" value={analysis.valueAnalysis.riskReduced} />
                 <ValueCard label="Revenue Impact" value={analysis.valueAnalysis.revenueUnlocked} />
               </div>
+              
+              <RegenerateControls
+                sectionId="value"
+                customInstructions={customInstructions.value || ''}
+                onInstructionsChange={(v) => setCustomInstructions(prev => ({ ...prev, value: v }))}
+                onRegenerate={() => handleRegenerate("value")}
+                isRegenerating={regeneratingSection === "value"}
+              />
             </div>
           </AnalysisSection>
 
@@ -205,8 +248,18 @@ export const AnalysisResult = ({ ideaData, analysis, onReset }: AnalysisResultPr
             expanded={expandedSections.includes("pitch")}
             onToggle={() => toggleSection("pitch")}
           >
-            <div className="border-2 border-border p-6 bg-secondary">
-              <p className="whitespace-pre-line leading-relaxed">{analysis.pitchStory}</p>
+            <div className="space-y-4">
+              <div className="border-2 border-border p-6 bg-secondary">
+                <p className="whitespace-pre-line leading-relaxed">{analysis.pitchStory}</p>
+              </div>
+              
+              <RegenerateControls
+                sectionId="pitch"
+                customInstructions={customInstructions.pitch || ''}
+                onInstructionsChange={(v) => setCustomInstructions(prev => ({ ...prev, pitch: v }))}
+                onRegenerate={() => handleRegenerate("pitch")}
+                isRegenerating={regeneratingSection === "pitch"}
+              />
             </div>
           </AnalysisSection>
 
@@ -217,14 +270,24 @@ export const AnalysisResult = ({ ideaData, analysis, onReset }: AnalysisResultPr
             expanded={expandedSections.includes("deck")}
             onToggle={() => toggleSection("deck")}
           >
-            <div className="grid gap-3">
-              <DeckSlide number={1} title="Problem" content={analysis.pitchDeck.problem} />
-              <DeckSlide number={2} title="Why Now" content={analysis.pitchDeck.whyNow} />
-              <DeckSlide number={3} title="Solution" content={analysis.pitchDeck.solution} />
-              <DeckSlide number={4} title="Market Size" content={analysis.pitchDeck.marketSize} />
-              <DeckSlide number={5} title="Business Model" content={analysis.pitchDeck.businessModel} />
-              <DeckSlide number={6} title="Go-to-Market" content={analysis.pitchDeck.goToMarket} />
-              <DeckSlide number={7} title="Differentiator" content={analysis.pitchDeck.differentiator} />
+            <div className="space-y-4">
+              <div className="grid gap-3">
+                <DeckSlide number={1} title="Problem" content={analysis.pitchDeck.problem} />
+                <DeckSlide number={2} title="Why Now" content={analysis.pitchDeck.whyNow} />
+                <DeckSlide number={3} title="Solution" content={analysis.pitchDeck.solution} />
+                <DeckSlide number={4} title="Market Size" content={analysis.pitchDeck.marketSize} />
+                <DeckSlide number={5} title="Business Model" content={analysis.pitchDeck.businessModel} />
+                <DeckSlide number={6} title="Go-to-Market" content={analysis.pitchDeck.goToMarket} />
+                <DeckSlide number={7} title="Differentiator" content={analysis.pitchDeck.differentiator} />
+              </div>
+              
+              <RegenerateControls
+                sectionId="deck"
+                customInstructions={customInstructions.deck || ''}
+                onInstructionsChange={(v) => setCustomInstructions(prev => ({ ...prev, deck: v }))}
+                onRegenerate={() => handleRegenerate("deck")}
+                isRegenerating={regeneratingSection === "deck"}
+              />
             </div>
           </AnalysisSection>
 
@@ -253,6 +316,14 @@ export const AnalysisResult = ({ ideaData, analysis, onReset }: AnalysisResultPr
                 <p className="font-bold">{analysis.profitStructure.recommendation}</p>
                 <p className="text-sm text-muted-foreground mt-1">{analysis.profitStructure.reason}</p>
               </div>
+              
+              <RegenerateControls
+                sectionId="company"
+                customInstructions={customInstructions.company || ''}
+                onInstructionsChange={(v) => setCustomInstructions(prev => ({ ...prev, company: v }))}
+                onRegenerate={() => handleRegenerate("company")}
+                isRegenerating={regeneratingSection === "company"}
+              />
             </div>
           </AnalysisSection>
 
@@ -283,6 +354,14 @@ export const AnalysisResult = ({ ideaData, analysis, onReset }: AnalysisResultPr
                 phase="Month 7+"
                 title="Scale"
                 tasks={analysis.timeline.month7plus}
+              />
+              
+              <RegenerateControls
+                sectionId="timeline"
+                customInstructions={customInstructions.timeline || ''}
+                onInstructionsChange={(v) => setCustomInstructions(prev => ({ ...prev, timeline: v }))}
+                onRegenerate={() => handleRegenerate("timeline")}
+                isRegenerating={regeneratingSection === "timeline"}
               />
             </div>
           </AnalysisSection>
@@ -321,9 +400,9 @@ export const AnalysisResult = ({ ideaData, analysis, onReset }: AnalysisResultPr
               <RotateCcw className="h-4 w-4" />
               Start Over
             </Button>
-            <Button className="gap-2">
-              Export Full Report
-              <FileText className="h-4 w-4" />
+            <Button onClick={handleExportPdf} className="gap-2">
+              <Download className="h-4 w-4" />
+              Download PDF
             </Button>
           </div>
         </div>
@@ -331,6 +410,46 @@ export const AnalysisResult = ({ ideaData, analysis, onReset }: AnalysisResultPr
     </div>
   );
 };
+
+const RegenerateControls = ({
+  sectionId,
+  customInstructions,
+  onInstructionsChange,
+  onRegenerate,
+  isRegenerating,
+}: {
+  sectionId: RegenerateSection;
+  customInstructions: string;
+  onInstructionsChange: (value: string) => void;
+  onRegenerate: () => void;
+  isRegenerating: boolean;
+}) => (
+  <div className="mt-4 pt-4 border-t border-border/50 space-y-3">
+    <div className="flex flex-col sm:flex-row gap-2">
+      <Input
+        placeholder="Optional: Add custom instructions for regeneration..."
+        value={customInstructions}
+        onChange={(e) => onInstructionsChange(e.target.value)}
+        className="flex-1 text-sm"
+        disabled={isRegenerating}
+      />
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={onRegenerate}
+        disabled={isRegenerating}
+        className="gap-2 shrink-0"
+      >
+        {isRegenerating ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <RefreshCw className="h-4 w-4" />
+        )}
+        Regenerate
+      </Button>
+    </div>
+  </div>
+);
 
 const DecisionIcon = ({ decision }: { decision: "yes" | "conditional" | "no" }) => {
   const iconClass = "h-16 w-16 md:h-20 md:w-20";

@@ -54,7 +54,12 @@ const Index = () => {
       {step === "intake" && <IdeaIntakeForm onSubmit={handleSubmit} onBack={() => setStep("hero")} />}
       {step === "loading" && ideaData && <AnalysisLoading ideaName={ideaData.ideaName} />}
       {step === "analysis" && ideaData && analysisData && (
-        <AnalysisResult ideaData={ideaData} analysis={analysisData} onReset={handleReset} />
+        <AnalysisResult 
+          ideaData={ideaData} 
+          analysis={analysisData} 
+          onReset={handleReset}
+          onAnalysisUpdate={setAnalysisData}
+        />
       )}
     </main>
   );
