@@ -20,7 +20,9 @@ interface Message {
   timestamp: Date;
 }
 
-const SUGGESTED_PROMPTS = [
+export type ChatMode = 'general' | 'investor';
+
+const GENERAL_PROMPTS = [
   "Can I start a company on OPT?",
   "What should I register first?",
   "Do I need a lawyer?",
@@ -29,21 +31,99 @@ const SUGGESTED_PROMPTS = [
   "What's the cheapest option?",
 ];
 
-export const FoundrChatbot = () => {
-  const [isOpen, setIsOpen] = useState(false);
+const INVESTOR_PROMPTS = [
+  "Am I too early to raise?",
+  "Should I pitch angels or VCs?",
+  "How do I find warm intros?",
+  "What will investors push back on?",
+  "What's a fair pre-money valuation?",
+  "How long does fundraising take?",
+];
+
+interface FoundrChatbotProps {
+  initialMode?: ChatMode;
+  prefilledMessage?: string;
+}
+
+export const FoundrChatbot = ({ initialMode = 'general', prefilledMessage }: FoundrChatbotProps) => {
+  const [isOpen, setIsOpen] = useState(!!prefilledMessage);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [mode, setMode] = useState<ChatMode>(initialMode);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { ledger } = useDecisionLedger();
+  const processedPrefilledRef = useRef(false);
+
+  const SUGGESTED_PROMPTS = mode === 'investor' ? INVESTOR_PROMPTS : GENERAL_PROMPTS;
+
+  // Handle prefilled message
+  useEffect(() => {
+    if (prefilledMessage && !processedPrefilledRef.current) {
+      processedPrefilledRef.current = true;
+      handleSend(prefilledMessage);
+    }
+  }, [prefilledMessage]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  const getInvestorResponse = (query: string): string => {
+    const q = query.toLowerCase();
+    const ideaName = ledger.ideaSnapshot?.ideaName || 'your startup';
+    
+    // Too early to raise
+    if (q.includes('early') || q.includes('too soon')) {
+      const hasEntity = ledger.entityType;
+      if (!hasEntity) {
+        return `For ${ideaName}: You're likely too early if you don't have: 1) A clear problem/solution, 2) Some form of traction (users, waitlist, revenue), 3) A team or strong solo story. Most angels want to see momentum. Focus on: getting 10-20 design partners or launching a waitlist first.`;
+      }
+      return `For ${ideaName}: Consider raising when you have: 1) Proof people want this (signups, usage, revenue), 2) A story for why now, 3) Clear use of funds. You have your entity set up, which is good. The real question: can you show traction or a compelling narrative?`;
+    }
+    
+    // Angels vs VCs
+    if (q.includes('angel') || q.includes('vc') || q.includes('pitch')) {
+      return `For ${ideaName}: **Angels** are better if: you're pre-product, need $25K-$150K, want quick decisions. **VCs** (pre-seed/seed) are better if: you have early traction, need $500K+, want strategic help. Most founders start with angels → accelerator → seed VC. Your path depends on how much you need and how fast you're growing.`;
+    }
+    
+    // Warm intros
+    if (q.includes('intro') || q.includes('warm') || q.includes('network')) {
+      return `Finding warm intros for ${ideaName}: 1) LinkedIn: who do you know who knows investors? 2) Your university alumni network, 3) Accelerator alumni, 4) Founders who've raised (they often intro), 5) AngelList connections. Cold outreach works sometimes, but warm intros convert 10x better. Start by listing 20 people who might know investors.`;
+    }
+    
+    // Pushback
+    if (q.includes('pushback') || q.includes('object') || q.includes('concern')) {
+      const analysis = ledger.analysis;
+      let concerns = [];
+      if (analysis?.decisionRationale.marketSaturation === 'high') concerns.push('crowded market');
+      if (analysis?.decisionRationale.differentiation === 'weak') concerns.push('unclear differentiation');
+      if (analysis?.decisionRationale.userUrgency === 'low') concerns.push('low user urgency');
+      const concernList = concerns.length > 0 ? concerns.join(', ') : 'standard founder questions';
+      return `For ${ideaName}, investors will likely push back on: ${concernList}. Common objections: 1) "Why you?" → founder-market fit, 2) "Why now?" → timing/urgency, 3) "How big can this get?" → market size, 4) "What's the moat?" → defensibility. Prepare strong answers for each.`;
+    }
+    
+    // Valuation
+    if (q.includes('valuation') || q.includes('pre-money') || q.includes('worth')) {
+      return `Pre-seed valuations for ${ideaName}: $1M-$5M pre-money is typical for pre-product. $3M-$8M if you have early traction. $5M-$15M for strong teams with proven backgrounds. Don't obsess over valuation early—terms (pro-rata, board seats) matter more. SAFE notes are common: no valuation, just a cap.`;
+    }
+    
+    // Timeline
+    if (q.includes('long') || q.includes('time') || q.includes('how long')) {
+      return `Fundraising timeline: Angels: 2-8 weeks per close. Pre-seed round: 2-4 months. Seed round: 3-6 months. The process: 1) Build target list (50-100 investors), 2) Get intros (2-3 weeks), 3) First meetings (2-4 weeks), 4) Follow-ups & due diligence (2-4 weeks), 5) Term sheet & close (2-4 weeks). Start earlier than you think.`;
+    }
+    
+    return `I can help with investor questions for ${ideaName}. Ask about: timing to raise, angels vs VCs, finding warm intros, handling objections, valuation, or fundraising timelines. What would you like to know?`;
+  };
+
   const getContextualResponse = (query: string): string => {
     const q = query.toLowerCase();
     const hasProceed = ledger.proceedIntent === 'yes' || ledger.proceedIntent === 'conditional';
+    
+    // Investor mode responses
+    if (mode === 'investor') {
+      return getInvestorResponse(query);
+    }
     
     // If user hasn't committed, only answer high-level questions
     if (!hasProceed) {
@@ -150,22 +230,43 @@ export const FoundrChatbot = () => {
   return (
     <div className="fixed bottom-6 right-6 z-50 w-[380px] max-w-[calc(100vw-3rem)] h-[500px] max-h-[calc(100vh-6rem)] bg-card rounded-2xl shadow-2xl border border-border/50 flex flex-col overflow-hidden animate-scale-in">
       {/* Header */}
-      <div className="bg-gradient-primary p-4 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
-            <Sparkles className="h-5 w-5 text-primary-foreground" />
+      <div className="bg-gradient-primary p-4 flex flex-col gap-3 shrink-0">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
+              <Sparkles className="h-5 w-5 text-primary-foreground" />
+            </div>
+            <div>
+              <h3 className="font-bold text-primary-foreground">Ask FoundrFate</h3>
+              <p className="text-xs text-primary-foreground/80">Your founder guide</p>
+            </div>
           </div>
-          <div>
-            <h3 className="font-bold text-primary-foreground">Ask FoundrFate</h3>
-            <p className="text-xs text-primary-foreground/80">Your founder guide</p>
-          </div>
+          <button 
+            onClick={() => setIsOpen(false)}
+            className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center text-primary-foreground transition-colors"
+          >
+            <X className="h-4 w-4" />
+          </button>
         </div>
-        <button 
-          onClick={() => setIsOpen(false)}
-          className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center text-primary-foreground transition-colors"
-        >
-          <X className="h-4 w-4" />
-        </button>
+        {/* Mode Toggle */}
+        <div className="flex gap-1 bg-white/10 rounded-lg p-1">
+          <button
+            onClick={() => setMode('general')}
+            className={`flex-1 py-1.5 px-3 rounded-md text-xs font-medium transition-all ${
+              mode === 'general' ? 'bg-white/20 text-primary-foreground' : 'text-primary-foreground/70 hover:text-primary-foreground'
+            }`}
+          >
+            General
+          </button>
+          <button
+            onClick={() => setMode('investor')}
+            className={`flex-1 py-1.5 px-3 rounded-md text-xs font-medium transition-all ${
+              mode === 'investor' ? 'bg-white/20 text-primary-foreground' : 'text-primary-foreground/70 hover:text-primary-foreground'
+            }`}
+          >
+            Investor Prep
+          </button>
+        </div>
       </div>
 
       {/* Messages */}

@@ -12,6 +12,7 @@ import {
   Hand
 } from "lucide-react";
 import { useDecisionLedger, type ProceedIntent } from "@/contexts/DecisionLedgerContext";
+import { CompetitorAnalysis } from "./CompetitorAnalysis";
 
 interface VerdictSummaryProps {
   onProceed: (intent: ProceedIntent) => void;
@@ -209,6 +210,9 @@ export const VerdictSummary = ({ onProceed }: VerdictSummaryProps) => {
           ))}
         </div>
       </div>
+
+      {/* Competitor Analysis - Collapsible */}
+      <CompetitorAnalysis />
 
       {/* The Decision Gate */}
       <div className="bg-gradient-hero rounded-2xl border border-primary/20 p-8 text-center space-y-6">
