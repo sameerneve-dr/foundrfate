@@ -1,18 +1,43 @@
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Target, Zap, Shield } from "lucide-react";
+import { ArrowRight, Target, Zap, Shield, FolderOpen, User } from "lucide-react";
+import { Link } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface HeroSectionProps {
   onStart: () => void;
 }
 
 export const HeroSection = ({ onStart }: HeroSectionProps) => {
+  const { user, signOut } = useAuth();
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
       <header className="border-b-2 border-border p-4">
         <div className="container flex items-center justify-between">
           <h1 className="text-2xl font-bold tracking-tight">FoundrFate</h1>
-          <span className="font-mono text-sm text-muted-foreground">v1.0</span>
+          <div className="flex items-center gap-3">
+            {user ? (
+              <>
+                <Button variant="ghost" size="sm" asChild>
+                  <Link to="/saved-ideas" className="gap-1.5">
+                    <FolderOpen className="h-4 w-4" />
+                    My Ideas
+                  </Link>
+                </Button>
+                <Button variant="outline" size="sm" onClick={signOut}>
+                  Sign Out
+                </Button>
+              </>
+            ) : (
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/auth" className="gap-1.5">
+                  <User className="h-4 w-4" />
+                  Sign In
+                </Link>
+              </Button>
+            )}
+          </div>
         </div>
       </header>
 
