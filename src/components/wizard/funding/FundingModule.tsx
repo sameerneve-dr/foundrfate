@@ -60,18 +60,49 @@ export const FundingModule = ({ onComplete, onBack }: FundingModuleProps) => {
       <div className="bg-muted/30 p-2">
         <div className="container max-w-3xl">
           <div className="flex gap-1">
-            {steps.map((step, i) => (
-              <button
-                key={step}
-                onClick={() => setCurrentStep(step)}
-                className={`flex-1 h-1.5 rounded-full transition-all ${
-                  i <= currentIndex ? 'bg-success' : 'bg-muted'
-                }`}
-              />
-            ))}
+            {steps.map((step, i) => {
+              const stepLabels: Record<FundingStep, string> = {
+                readiness: '1. Readiness',
+                investors: '2. Investors',
+                checklist: '3. Checklist',
+                pitchdeck: '4. Pitch Deck',
+                education: '5. Guidance'
+              };
+              return (
+                <button
+                  key={step}
+                  onClick={() => setCurrentStep(step)}
+                  title={stepLabels[step]}
+                  className={`flex-1 h-2 rounded-full transition-all cursor-pointer hover:opacity-80 ${
+                    i <= currentIndex ? 'bg-success' : 'bg-muted hover:bg-muted-foreground/30'
+                  }`}
+                />
+              );
+            })}
+          </div>
+          {/* Step labels for clarity */}
+          <div className="flex justify-between mt-1 text-xs text-muted-foreground">
+            <span>Readiness</span>
+            <span>Investors</span>
+            <span>Checklist</span>
+            <span>Pitch Deck</span>
+            <span className="font-medium text-success">Guidance</span>
           </div>
         </div>
       </div>
+
+      {/* Failsafe: Direct access to Investor Guidance */}
+      {currentStep !== 'education' && (
+        <div className="container max-w-3xl py-2">
+          <button
+            onClick={() => setCurrentStep('education')}
+            className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 ml-auto"
+          >
+            <Sparkles className="h-3 w-3" />
+            Skip to Investor Guidance →
+          </button>
+        </div>
+      )}
 
       <div className="flex-1 py-8 px-4 bg-gradient-hero">
         <div className="container max-w-3xl space-y-6">
