@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useSavedIdeas } from "@/hooks/useSavedIdeas";
 import { useIdeaAnalysis } from "@/hooks/useIdeaAnalysis";
 import { WizardProgress } from "./WizardProgress";
+import { WizardHeader } from "./WizardHeader";
 import { ChoicesSidebar } from "./ChoicesSidebar";
 import { AnimatedStep } from "./AnimatedStep";
 import { FoundrChatbot } from "./FoundrChatbot";
@@ -146,16 +147,11 @@ export const FoundrWizard = ({ onBack }: FoundrWizardProps) => {
   if (currentView === 'ccorp-setup') {
     return (
       <div className="min-h-screen flex flex-col bg-background">
-        <header className="border-b border-border/50 p-4 bg-card/80 backdrop-blur-sm">
-          <div className="container flex items-center justify-between">
-            <button onClick={() => setCurrentView('company-setup')} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
-              <ArrowLeft className="h-4 w-4" />
-              <span className="font-medium text-sm">Back</span>
-            </button>
-            <h1 className="text-xl font-display font-bold text-gradient-primary">FoundrFate</h1>
-            <span className="pill pill-primary text-xs">C-Corp Setup</span>
-          </div>
-        </header>
+        <WizardHeader
+          onBack={() => setCurrentView('company-setup')}
+          title="C-Corp Setup"
+          badge="C-Corp Setup"
+        />
         <div className="flex-1 py-8 px-4 bg-gradient-hero">
           <div className="container max-w-2xl">
             <CCorpSetupWizard onComplete={handleSectionComplete} />
@@ -192,21 +188,12 @@ export const FoundrWizard = ({ onBack }: FoundrWizardProps) => {
 
     return (
       <div className="min-h-screen flex flex-col bg-background">
-        <header className="border-b border-border/50 p-4 bg-card/80 backdrop-blur-sm sticky top-0 z-10">
-          <div className="container flex items-center justify-between">
-            <button onClick={() => setCurrentView('execution-journey')} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
-              <ArrowLeft className="h-4 w-4" />
-              <span className="font-medium text-sm">Back to Journey</span>
-            </button>
-            <h1 className="text-xl font-display font-bold flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-primary" />
-              <span className="text-gradient-primary">Company Setup</span>
-            </h1>
-            <span className="pill pill-primary text-xs">
-              {ledger.ideaSnapshot?.ideaName || 'New Idea'}
-            </span>
-          </div>
-        </header>
+        <WizardHeader
+          onBack={() => setCurrentView('execution-journey')}
+          backLabel="Back to Journey"
+          title="Company Setup"
+          badge={ledger.ideaSnapshot?.ideaName || 'New Idea'}
+        />
 
         <WizardProgress 
           currentStep={companySetupStep}
@@ -239,16 +226,13 @@ export const FoundrWizard = ({ onBack }: FoundrWizardProps) => {
   if (currentView === 'timeline-roadmap') {
     return (
       <div className="min-h-screen flex flex-col bg-background">
-        <header className="border-b border-border/50 p-4 bg-card/80 backdrop-blur-sm sticky top-0 z-10">
-          <div className="container flex items-center justify-between">
-            <button onClick={() => setCurrentView('execution-journey')} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
-              <ArrowLeft className="h-4 w-4" />
-              <span className="font-medium text-sm">Back to Journey</span>
-            </button>
-            <h1 className="text-xl font-display font-bold text-gradient-primary">Timeline & Roadmap</h1>
-            <span className="pill pill-accent text-xs">Planning</span>
-          </div>
-        </header>
+        <WizardHeader
+          onBack={() => setCurrentView('execution-journey')}
+          backLabel="Back to Journey"
+          title="Timeline & Roadmap"
+          badge="Planning"
+          badgeVariant="accent"
+        />
         <div className="flex-1 py-8 px-4 bg-gradient-hero">
           <div className="container max-w-2xl">
             <TimelineStep onComplete={handleSectionComplete} />
@@ -263,16 +247,12 @@ export const FoundrWizard = ({ onBack }: FoundrWizardProps) => {
   if (currentView === 'pitch-deck') {
     return (
       <div className="min-h-screen flex flex-col bg-background">
-        <header className="border-b border-border/50 p-4 bg-card/80 backdrop-blur-sm sticky top-0 z-10">
-          <div className="container flex items-center justify-between">
-            <button onClick={() => setCurrentView('execution-journey')} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
-              <ArrowLeft className="h-4 w-4" />
-              <span className="font-medium text-sm">Back to Journey</span>
-            </button>
-            <h1 className="text-xl font-display font-bold text-gradient-primary">Pitch & Deck</h1>
-            <span className="pill pill-primary text-xs">Investor Ready</span>
-          </div>
-        </header>
+        <WizardHeader
+          onBack={() => setCurrentView('execution-journey')}
+          backLabel="Back to Journey"
+          title="Pitch & Deck"
+          badge="Investor Ready"
+        />
         <div className="flex-1 py-8 px-4 bg-gradient-hero">
           <div className="container max-w-2xl">
             <FinalSummaryStep onReset={handleReset} onGeneratePitch={() => setShowPitchDeck(true)} />
