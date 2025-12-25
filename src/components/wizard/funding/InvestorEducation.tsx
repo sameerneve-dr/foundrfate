@@ -15,6 +15,7 @@ interface InvestorEducationProps {
 }
 
 export const InvestorEducation = ({ onChatWithBot }: InvestorEducationProps) => {
+  console.log("InvestorEducation mounted");
   const topics = [
     {
       id: 'outreach',
@@ -60,7 +61,7 @@ export const InvestorEducation = ({ onChatWithBot }: InvestorEducationProps) => 
           <Sparkles className="h-5 w-5 text-accent-foreground" />
         </div>
         <div>
-          <h3 className="text-lg font-bold">Step 4: Learn How to Approach Investors</h3>
+          <h3 className="text-lg font-bold">Step 5: Learn How to Approach Investors</h3>
           <p className="text-sm text-muted-foreground">Personalized guidance based on your idea</p>
         </div>
       </div>
